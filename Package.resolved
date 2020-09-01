@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "SwiftRLE",
+        "repositoryURL": "https://github.com/YusukeHosonuma/SwiftRLE.git",
+        "state": {
+          "branch": null,
+          "revision": "82e102afd5fa92f58761fdd77fb37bc98f2252c8",
+          "version": "0.1.0"
+        }
+      },
+      {
+        "package": "SwiftSoup",
+        "repositoryURL": "https://github.com/scinfu/SwiftSoup.git",
+        "state": {
+          "branch": null,
+          "revision": "774dc9c7213085db8aa59595e27c1cd22e428904",
+          "version": "2.3.2"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

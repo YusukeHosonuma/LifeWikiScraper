@@ -7,20 +7,35 @@
 
 import Foundation
 import os
-
+import Combine
+import CommonCrypto
+import CryptoKit
 // TODO: 本当は`Logger`を使ったほうがいい。
+
+extension CachedHTTPTextDownloader {
+    func downloadPublisher(url: URL) -> AnyPublisher<String?, Never> {
+        Future<String?, Never> { promise in
+            self.download(url: url) { (content) in
+                promise(.success(content))
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+}
 
 final class CachedHTTPTextDownloader {
     
     private let cacheDirectory: URL
+    private let useMD5: Bool
     
-    init(cacheDirectory: URL) {
+    init(cacheDirectory: URL, useMD5: Bool = false) {
         do {
             try FileManager().createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
         } catch {
             print("⚠️ Create to cache directory is failed. Cache is disabled. \(error.localizedDescription)")
         }
         self.cacheDirectory = cacheDirectory
+        self.useMD5 = useMD5
     }
     
     func download(url: URL, completion: @escaping (String?) -> Void) {
@@ -55,7 +70,7 @@ final class CachedHTTPTextDownloader {
         // TODO: 雑・・・
         do {
             let text = try String(contentsOfFile: filePath, encoding: .utf8)
-            print("✅ Load from cache.")
+            print("☑️ Load from cache.")
             return text
         } catch {
             print("⚠️ Cache is found, but failed to load. Retry to load from network...")
@@ -74,7 +89,14 @@ final class CachedHTTPTextDownloader {
     }
     
     private func cacheFilePath(source: URL) -> String {
-        let fileName = source.lastPathComponent
+        let fileName: String
+        
+        if useMD5 {
+            fileName = source.absoluteString.md5
+        } else {
+            fileName = source.lastPathComponent
+        }
+        
         return cacheDirectory.appendingPathComponent(fileName).path
     }
 }
