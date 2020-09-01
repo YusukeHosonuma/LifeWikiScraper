@@ -13,8 +13,8 @@ private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWit
 
 // e.g. https://www.conwaylife.com/wiki/$rats
 public struct LifeWikiPatternPage {
-    let plainTextURL: URL?
-    let rleURL: URL?
+    public let plainTextURL: URL?
+    public let rleURL: URL?
     
     public static func fetch(url: URL) -> AnyPublisher<LifeWikiPatternPage, Never> {
         downloader.downloadPublisher(url: url)

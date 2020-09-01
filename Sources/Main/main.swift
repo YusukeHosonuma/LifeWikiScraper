@@ -9,8 +9,8 @@ let fetchCount = 20 // 最後には全部取得するので不要になる
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
     
     _ = LifeWikiAllPatternPage.fetchAll()
-        .flatMap {
-            $0.map(\.links).joined()
+        .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[LifeWikiPatternPage], Never> in
+            pages.map(\.links).joined()
                 .prefix(fetchCount)
                 .reduce(
                     Just([LifeWikiPatternPage]()).eraseToAnyPublisher()
@@ -20,8 +20,24 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         .eraseToAnyPublisher()
                 }
         }
-        .sink { patternPages in
-            print("⭐ Found \(patternPages.count) pages.")
+        .flatMap { (pages: [LifeWikiPatternPage]) -> AnyPublisher<[LifeWikiRLE], Never> in
+            pages
+                .reduce(
+                    Just([LifeWikiRLE]()).eraseToAnyPublisher()
+                ) { (result, page) in
+                    if let url = page.rleURL {
+                        return result.zip(LifeWikiRLE.fetch(url: url))
+                            .map { $0.0 + [$0.1] }
+                            .eraseToAnyPublisher()
+                    } else {
+                        print("❌ RLE is not found (\(page)") // TODO: source URL を出力するように
+                        return result
+                    }
+                }
+        }
+        .sink { rles in
+            print("⭐ Found \(rles.count) pages.")
+            print(rles)
             exit(0)
         }
 }
