@@ -10,7 +10,7 @@ import Foundation
 import Combine
 
 private let firstPageURL = URL(string: "https://www.conwaylife.com/wiki/Category:Patterns")!
-private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/patterns/"), useMD5: true)
+private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/all/"), useMD5: true)
 
 public struct LifeWikiAllPatternPage {
     public let links: [URL]

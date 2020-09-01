@@ -52,11 +52,11 @@ final class CachedHTTPTextDownloader {
         URLSession.shared
             .dataTask(with: url) { (data: Data?, res: URLResponse?, err: Error?) in
                 guard let data = data, let html = String(data: data, encoding: .utf8) else {
-                    print("❌ Failed to download from network.")
+                    print("❌ Failed to download from network. \(url)")
                     completion(nil)
                     return
                 }
-                print("☁️ Loaded from network.")
+                print("☁️ Loaded from network. (\(url))")
                 self.saveCache(source: url, content: html)
                 completion(html)
             }.resume()
@@ -70,7 +70,7 @@ final class CachedHTTPTextDownloader {
         // TODO: 雑・・・
         do {
             let text = try String(contentsOfFile: filePath, encoding: .utf8)
-            print("☑️ Load from cache.")
+            print("☑️ Load from cache. (\(url))")
             return text
         } catch {
             print("⚠️ Cache is found, but failed to load. Retry to load from network...")
@@ -84,7 +84,7 @@ final class CachedHTTPTextDownloader {
             try content.write(toFile: filePath, atomically: true, encoding: .utf8)
             print("✅ Save cahce is succeeded.")
         } catch {
-            print("❌ Save cache is failed. \(error.localizedDescription)")
+            print("⚠️ Save cache is failed. \(error.localizedDescription)")
         }
     }
     

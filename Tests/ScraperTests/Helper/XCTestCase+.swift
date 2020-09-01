@@ -6,25 +6,22 @@
 //
 
 import XCTest
+@testable import Scraper
+
+// TODO: システムのキャッシュディレクトリが理想かもだけどとりあえず妥協
+let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache"), useMD5: true)
 
 extension XCTestCase {
-    func getData(url: URL) -> Data {
+    func getHTML(_ urlString: String) -> String {
         let exp = expectation(description: "")
         
-        var result: Data!
+        var result: String!
         
-        URLSession.shared.dataTask(with: url) { (data: Data?, res: URLResponse?, err: Error?) in
-            guard let data = data else { fatalError() }
-            result = data
+        downloader.download(url: URL(string: urlString)!) { (content) in
+            result = content!
             exp.fulfill()
-        }.resume()
-        
+        }
         wait(for: [exp], timeout: 3.0)
         return result
-    }
-    
-    func getHTML(_ urlString: String) -> String {
-        let data = getData(url: URL(string: urlString)!)
-        return String(data: data, encoding: .utf8)!
     }
 }
