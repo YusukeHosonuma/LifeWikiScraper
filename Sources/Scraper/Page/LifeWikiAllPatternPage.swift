@@ -12,18 +12,18 @@ import Combine
 private let firstPageURL = URL(string: "https://www.conwaylife.com/wiki/Category:Patterns")!
 private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/patterns/"), useMD5: true)
 
-public struct LifeWikiPatternPage {
+public struct LifeWikiAllPatternPage {
     public let links: [URL]
     public let nextLink: URL?
     
-    public static func fetchAll() -> AnyPublisher<[LifeWikiPatternPage], Never> {
+    public static func fetchAll() -> AnyPublisher<[LifeWikiAllPatternPage], Never> {
         fetchToTail(url: firstPageURL)
     }
 
-    public static func fetch(url: URL) -> AnyPublisher<LifeWikiPatternPage?, Never> {
+    public static func fetch(url: URL) -> AnyPublisher<LifeWikiAllPatternPage?, Never> {
         return downloader.downloadPublisher(url: url)
             .map { html in
-                LifeWikiPatternPage(html: html!)
+                LifeWikiAllPatternPage(html: html!)
             }
             .eraseToAnyPublisher()
     }
@@ -50,14 +50,14 @@ public struct LifeWikiPatternPage {
     
     // MARK: Internal
     
-    static func fetchToTail(url: URL?) -> AnyPublisher<[LifeWikiPatternPage], Never> {
+    static func fetchToTail(url: URL?) -> AnyPublisher<[LifeWikiAllPatternPage], Never> {
         guard let url = url else {
             return Just([])
                 .eraseToAnyPublisher()
         }
         
         return fetch(url: url)
-            .flatMap { page -> AnyPublisher<[LifeWikiPatternPage], Never> in
+            .flatMap { page -> AnyPublisher<[LifeWikiAllPatternPage], Never> in
                 if let page = page {
                     return Just([page])
                         .zip(fetchToTail(url: page.nextLink)) // ⤴️ recursive call

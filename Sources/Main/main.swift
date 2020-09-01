@@ -1,7 +1,7 @@
 import Foundation
 import Scraper
 
-let cancel = LifeWikiPatternPage.fetchAll()
+let cancel = LifeWikiAllPatternPage.fetchAll()
     .map {
         $0.map(\.links).joined()
     }
