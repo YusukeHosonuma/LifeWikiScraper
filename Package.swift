@@ -14,6 +14,9 @@ let package = Package(
     ],
     targets: [
         .target(
+            name: "Main",
+            dependencies: ["Scraper"]),
+        .target(
             name: "Scraper",
             dependencies: ["SwiftSoup", "SwiftRLE"]),
         .testTarget(

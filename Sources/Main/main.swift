@@ -1,6 +1,10 @@
 import Foundation
+import Scraper
 
 let cancel = LifeWikiPatternPage.fetchAll()
+    .map {
+        $0.map(\.links).joined()
+    }
     .sink { pages in
         print("🍎 Found pattern pages \(pages.count) pages.")
         exit(0)
