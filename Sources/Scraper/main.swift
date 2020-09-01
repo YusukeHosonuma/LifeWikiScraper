@@ -1,8 +1,22 @@
 import Foundation
 
-print("Hello, world!")
+let semaphore = DispatchSemaphore(value: 0)
 
+let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache", isDirectory: true))
+downloader.download(url: URL(string: "https://www.conwaylife.com/wiki/$rats")!) {
+    if let content = $0 {
+        print("🍎 Success!!")
+    } else {
+        print("🍏 Failed...")
+    }
+    semaphore.signal()
+}
 
+print("⏰ Wait...")
+semaphore.wait()
+print("⭐ Finsh!")
+
+/*
 let url = URL(fileURLWithPath: "./cache", isDirectory: true)
 do {
     try FileManager().createDirectory(at: url, withIntermediateDirectories: true)
@@ -22,3 +36,4 @@ do {
 } catch {
     print(error.localizedDescription)
 }
+*/
