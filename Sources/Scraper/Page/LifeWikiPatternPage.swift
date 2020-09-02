@@ -13,6 +13,9 @@ private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWit
 
 // e.g. https://www.conwaylife.com/wiki/$rats
 public struct LifeWikiPatternPage {
+    public let patternType: String
+    public let discoveredBy: String
+    public let yearOfDiscovery: String
     public let plainTextURL: URL?
     public let rleURL: URL?
     
@@ -39,6 +42,11 @@ public struct LifeWikiPatternPage {
             }
         }
         
+        // .inbox
+        patternType = Self.valueFromInfoTable(doc, name: "Pattern type")
+        discoveredBy = Self.valueFromInfoTable(doc, name: "Discovered by")
+        yearOfDiscovery = Self.valueFromInfoTable(doc, name: "Year of discovery")
+
         rleURL = xs
             .filter { try! !$0.select("a[title='RLE']").isEmpty() }
             .last // TODO: 暫定
@@ -46,6 +54,25 @@ public struct LifeWikiPatternPage {
                 let textLink = try! $0.select("a.external.text")
                 return URL(string: try! textLink.attr("href"))!
             }
+    }
+    
+    private static func valueFromInfoTable(_ doc: Document, name: String) -> String {
+        let infobox = try! doc.select(".infobox").first()!
+        let infoboxTrs = try! infobox.select("tr")
+        return infoboxTrs
+            .filter {
+                guard let th = try! $0.select("th").first() else { return false }
+                return try! th.html().contains("\(name)")
+            }
+            .map {
+                if let a = try! $0.select("a").first() {
+                    return try! a.html()
+                } else {
+                    // Always 'Unknown' maybe.
+                    return try! $0.select("td").first()!.html()
+                }
+            }
+            .first!
     }
 }
 

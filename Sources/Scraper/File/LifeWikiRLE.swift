@@ -24,10 +24,11 @@ public struct LifeWikiRLE {
     public let cells: [Int]
     //public let sourceURL: URL
     
-    public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE, Never> {
+    public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE?, Never> {
         downloader.downloadPublisher(url: url)
             .map { text in
-                LifeWikiRLE(text: text!)! // TODO: 暫定
+                print("🌎 RLE fetched (\(url))")
+                return LifeWikiRLE(text: text!) // TODO: 暫定（エラー型を扱ったほうがよさそう）
             }
             .eraseToAnyPublisher()
     }
@@ -50,12 +51,21 @@ public struct LifeWikiRLE {
         comments = comment["C"] ?? []
         
         let meta = Self.parseMetaLines(metaLines.removeFirst())
-        let x = meta["x"].flatMap(Int.init)!
-        let y = meta["y"].flatMap(Int.init)!
+        guard
+            let x = meta["x"].flatMap(Int.init),
+            let y = meta["y"].flatMap(Int.init) else {
+            print("⏭ Parse process is skpped because board size is missing.")
+            return nil
+        }
 
         self.x = x
         self.y = y
         rule = meta["rule"]!
+        
+        guard x * y < 10000 else {
+            print("⏭ Parse process is skpped because size is over than 10,000. (\(x) x \(y))")
+            return nil
+        }
         
         let dataLine = metaLines.joined().dropLast() // remove `!`
         guard let decoded = SwiftRLE.decode(String(dataLine)) else {
