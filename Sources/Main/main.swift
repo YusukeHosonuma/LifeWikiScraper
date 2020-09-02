@@ -21,15 +21,22 @@ _ = LifeWikiAllPatternPage.fetchAll()
         let initial = Just([LifeWikiRLE?]()).eraseToAnyPublisher()
         return pages
             .reduce(initial) { (result, page) in
-                guard let url = page.rleURL else {
+                let rlePublisher: AnyPublisher<LifeWikiRLE?, Never>
+
+                if let url = page.rleURL {
+                    rlePublisher = LifeWikiRLE.fetch(url: url)
+                } else {
                     print("❌ RLE is not found (\(page.sourceURL)")
-                    return result
+                    rlePublisher = Just<LifeWikiRLE?>(nil).eraseToAnyPublisher()
                 }
-                return result.zip(LifeWikiRLE.fetch(url: url))
+                
+                return result.zip(rlePublisher)
                     .map { $0.0 + [$0.1] }
                     .eraseToAnyPublisher()
             }
-            .map { Array(zip(pages, $0)) }
+            .map { rles in
+                Array(zip(pages, rles))
+            }
             .eraseToAnyPublisher()
         
     }
