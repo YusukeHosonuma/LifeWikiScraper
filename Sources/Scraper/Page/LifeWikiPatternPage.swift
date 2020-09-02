@@ -13,6 +13,7 @@ private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWit
 
 // e.g. https://www.conwaylife.com/wiki/$rats
 public struct LifeWikiPatternPage {
+    public let title: String
     public let patternType: String
     public let discoveredBy: String
     public let yearOfDiscovery: String
@@ -32,6 +33,9 @@ public struct LifeWikiPatternPage {
         self.sourceURL = source
         
         let doc = try! SwiftSoup.parse(html)
+        
+        title = try! doc.select("h1").html()
+        
         // document.querySelectorAll('.infobox_table tr').filter(x => x.querySelector("a[title='Plaintext']"))
         let xs = try! doc.select(".infobox_table tr")
         

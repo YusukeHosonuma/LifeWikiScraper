@@ -2,7 +2,7 @@ import Foundation
 import Scraper
 import Combine
 
-let fetchCount = 200 // 最後には全部取得するので不要になる
+let fetchCount = 20 // 最後には全部取得するので不要になる
 
 _ = LifeWikiAllPatternPage.fetchAll()
     .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[LifeWikiPatternPage], Never> in
@@ -38,14 +38,17 @@ _ = LifeWikiAllPatternPage.fetchAll()
                 Array(zip(pages, rles))
             }
             .eraseToAnyPublisher()
-        
     }
     .sink { results in
-        print("⭐ Found \(results.count) pages.")
-        let page = results.first!.0
-        let rle = results.first!.1
-        print("📄 \(page)")
-        print("🔖 \(rle!)")
+        let patterns = results
+            .compactMap {
+                guard let rle = $0.1 else { return nil }
+                return ($0.0, rle)
+            }
+            .map(LifeWikiPattern.init)
+        
+        print("⭐ Found \(patterns.count) pages.")
+        print("📄 \(patterns)")
         exit(0)
     }
 
