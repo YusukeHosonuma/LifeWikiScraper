@@ -13,11 +13,15 @@ let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "
 
 extension XCTestCase {
     func getHTML(_ urlString: String) -> String {
+        getHTML(url: URL(string: urlString)!)
+    }
+    
+    func getHTML(url: URL) -> String {
         let exp = expectation(description: "")
         
         var result: String!
         
-        downloader.download(url: URL(string: urlString)!) { (content) in
+        downloader.download(url: url) { (content) in
             result = content!
             exp.fulfill()
         }

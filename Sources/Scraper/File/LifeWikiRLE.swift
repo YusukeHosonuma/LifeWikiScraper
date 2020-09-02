@@ -22,18 +22,20 @@ public struct LifeWikiRLE {
     public let author: String?    // #O
     public let comments: [String] // #C
     public let cells: [Int]
-    //public let sourceURL: URL
+    public let sourceURL: URL
     
     public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE?, Never> {
         downloader.downloadPublisher(url: url)
             .map { text in
                 print("🌎 RLE fetched (\(url))")
-                return LifeWikiRLE(text: text!) // TODO: 暫定（エラー型を扱ったほうがよさそう）
+                return LifeWikiRLE(text: text!, source: url) // TODO: 暫定（エラー型を扱ったほうがよさそう）
             }
             .eraseToAnyPublisher()
     }
     
-    public init?(text: String) {
+    init?(text: String, source: URL) {
+        self.sourceURL = source
+        
         // Note:
         // ファイルによって改行コードが異なる事があるので、実際のファイルの内容から推定する必要がある。
         let lineSeparator: Character = text.contains("\r\n") ? "\r\n" : "\n"

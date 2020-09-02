@@ -18,16 +18,19 @@ public struct LifeWikiPatternPage {
     public let yearOfDiscovery: String
     public let plainTextURL: URL?
     public let rleURL: URL?
+    public let sourceURL: URL
     
     public static func fetch(url: URL) -> AnyPublisher<LifeWikiPatternPage, Never> {
         downloader.downloadPublisher(url: url)
             .map { html in
-                LifeWikiPatternPage(html: html!)
+                LifeWikiPatternPage(html: html!, source: url)
             }
             .eraseToAnyPublisher()
     }
     
-    public init(html: String) {
+    public init(html: String, source: URL) {
+        self.sourceURL = source
+        
         let doc = try! SwiftSoup.parse(html)
         // document.querySelectorAll('.infobox_table tr').filter(x => x.querySelector("a[title='Plaintext']"))
         let xs = try! doc.select(".infobox_table tr")
