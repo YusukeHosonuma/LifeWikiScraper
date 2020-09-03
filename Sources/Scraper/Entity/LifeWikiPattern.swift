@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct LifeWikiPattern {
+public struct LifeWikiPattern: Codable {
     public let title: String
     public let patternType: String
     public let rule: String

@@ -2,7 +2,9 @@ import Foundation
 import Scraper
 import Combine
 
-//let fetchCount = 1400 // 最後には全部取得するので不要になる
+// TODO: 完全な並列ストリームに変更する（ファイル保存まで）
+
+let fetchCount = 100 // 最後には全部取得するので不要になる
 
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
     let start = Date()
@@ -12,7 +14,7 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             print("⚡️ Start fetch Pattern pages.")
             let initial = Just([LifeWikiPatternPage]()).eraseToAnyPublisher()
             return pages.map(\.patternLinks).joined()
-                //.prefix(fetchCount)
+               // .prefix(fetchCount)
                 .reduce(initial) { (result, link) in
                     result.zip(LifeWikiPatternPage.fetch(url: link))
                         .map { (result: [LifeWikiPatternPage], page: LifeWikiPatternPage?) in
@@ -21,6 +23,15 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         }
                         .eraseToAnyPublisher()
                 }
+        }
+        .map { (pages: [LifeWikiPatternPage]) in
+            pages.filter {
+                let isScraped = LifeWikiPatternHolder.isScraped($0.sourceURL)
+                if isScraped {
+                    print("🌤 Skip because already scraped. (\($0.sourceURL))")
+                }
+                return !isScraped
+            }
         }
         .flatMap { (pages: [LifeWikiPatternPage]) -> AnyPublisher<[(LifeWikiPatternPage, LifeWikiRLE?)], Never> in
             print("⚡️ Start fetch RLE.")
@@ -51,18 +62,25 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     guard let rle = $0.1 else { return nil }
                     return ($0.0, rle)
                 }
-                .map(LifeWikiPattern.init)
-            
+                .map { page, rle in
+                    LifeWikiPattern(page: page, rle: rle)
+                }
+
             print("⭐ Found \(patterns.count) pages.")
+
+            for pattern in patterns {
+                print("📁 Save \(pattern.title)...")
+                LifeWikiPatternHolder.write(pattern)
+            }
             
             let elapsed = Date().timeIntervalSince(start)
             print("🌈 Finish! (\(elapsed))")
 
-            print("📄 Patterns")
-            for pattern in patterns {
-                print("\(pattern)")
-                print()
-            }
+//            print("📄 Patterns")
+//            for pattern in patterns {
+//                print("\(pattern)")
+//                print()
+//            }
             exit(0)
         }
 }
