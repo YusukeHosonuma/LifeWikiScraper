@@ -2,15 +2,17 @@ import Foundation
 import Scraper
 import Combine
 
-let fetchCount = 1400 // 最後には全部取得するので不要になる
+//let fetchCount = 1400 // 最後には全部取得するので不要になる
 
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+    let start = Date()
+    
     _ = LifeWikiAllPatternPage.fetchAll()
         .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[LifeWikiPatternPage], Never> in
             print("⚡️ Start fetch Pattern pages.")
             let initial = Just([LifeWikiPatternPage]()).eraseToAnyPublisher()
             return pages.map(\.patternLinks).joined()
-                .prefix(fetchCount)
+                //.prefix(fetchCount)
                 .reduce(initial) { (result, link) in
                     result.zip(LifeWikiPatternPage.fetch(url: link))
                         .map { (result: [LifeWikiPatternPage], page: LifeWikiPatternPage?) in
@@ -52,6 +54,10 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 .map(LifeWikiPattern.init)
             
             print("⭐ Found \(patterns.count) pages.")
+            
+            let elapsed = Date().timeIntervalSince(start)
+            print("🌈 Finish! (\(elapsed))")
+
             print("📄 Patterns")
             for pattern in patterns {
                 print("\(pattern)")

@@ -36,27 +36,24 @@ public struct LifeWikiRLE {
             }
             .eraseToAnyPublisher()
     }
-    
+
     init?(text: String, source: URL) {
         self.sourceURL = source
         
         // Note:
         // ファイルによって改行コードが異なる事があるので、実際のファイルの内容から推定する必要がある。
-        let lineSeparator: Character = text.contains("\r\n") ? "\r\n" : "\n"
+        // （複数の改行コードが混在したケースもあるので、現状の処理では不十分ではある）
+        let lineSeparator: Character = text.first(where: { $0 == "\r\n" || $0 == "\n" })!
         
-        let lines = text
-            .split(separator: lineSeparator)
-            .map(String.init)
+        // Note:
+        // 中には1MBを超える巨大なファイルも存在するため、メタ情報の行だけ先読みして処理が不要ならスキップする。
+        // https://www.conwaylife.com/patterns/caterloopillar31c240.rle
+        guard let metaLine = Self.extractMetaLine(text, lineSeparator: lineSeparator) else {
+            print("⚠️ Skipped because meta line is missing. (\(source))")
+            return nil
+        }
         
-        let commentLines = lines.prefix(while: { $0.hasPrefix("#") })
-        var metaLines = lines.drop(while: { $0.hasPrefix("#") })
-        
-        let comment = Self.parseCommentLines(commentLines)
-        name = comment["N"]?.first!
-        author = comment["O"]?.first
-        comments = comment["C"] ?? []
-        
-        let meta = Self.parseMetaLines(metaLines.removeFirst())
+        let meta = Self.parseMetaLines(metaLine)
         guard
             let x = meta["x"].flatMap(Int.init),
             let y = meta["y"].flatMap(Int.init) else {
@@ -73,7 +70,19 @@ public struct LifeWikiRLE {
             return nil
         }
         
-        let dataLine = metaLines.joined().dropLast() // remove `!`
+        let lines = text
+            .split(separator: lineSeparator)
+            .map(String.init)
+        
+        let commentLines = lines.prefix(while: { $0.hasPrefix("#") })
+        //var metaLines = lines.drop(while: { $0.hasPrefix("#") })
+        
+        let comment = Self.parseCommentLines(commentLines)
+        name = comment["N"]?.first!
+        author = comment["O"]?.first
+        comments = comment["C"] ?? []
+
+        let dataLine = lines[(commentLines.count + 1)...].joined().dropLast() // remove `!`
         guard let decoded = SwiftRLE.decode(String(dataLine)) else {
             return nil
         }
@@ -87,6 +96,13 @@ public struct LifeWikiRLE {
     }
     
     // MARK: Private
+    
+    private static func extractMetaLine(_ text: String, lineSeparator: Character) -> String? {
+        guard let range = text.range(of: "x = ") else { return nil }
+        let startIndex = range.lowerBound
+        let endIndex = text[startIndex...].firstIndex(where: { $0 == "\r\n" || $0 == "\n" })!
+        return String(text[startIndex..<endIndex])
+    }
     
     private static func parseCommentLines(_ lines: ArraySlice<String>) -> [String: [String]] {
         lines
