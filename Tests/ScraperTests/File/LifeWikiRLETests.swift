@@ -105,7 +105,7 @@ final class LifeWikiRLETests: XCTestCase {
     // TODO: かなり重いので改善したい（ファイルがデカイ）
     func testExample4() {
         let url = URL(string: "https://www.conwaylife.com/patterns/caterloopillar31c240.rle")!
-        let text = getPlainText(url: url)
+        let text = getContent(url: url, type: .plainText)
         let rle = LifeWikiRLE(text: text, source: url)
         XCTAssertNil(rle)
     }

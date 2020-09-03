@@ -12,29 +12,16 @@ import XCTest
 let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache"), useMD5: true)
 
 extension XCTestCase {
-    func getHTML(_ urlString: String) -> String {
-        getHTML(url: URL(string: urlString)!)
+    func getContent(_ urlString: String, type: ContentType) -> String {
+        getContent(url: URL(string: urlString)!, type: type)
     }
-    
-    func getHTML(url: URL) -> String {
+
+    func getContent(url: URL, type: ContentType) -> String {
         let exp = expectation(description: "")
         
         var result: String!
         
-        downloader.download(url: url, type: .html) { (content) in
-            result = content!
-            exp.fulfill()
-        }
-        wait(for: [exp], timeout: 10.0)
-        return result
-    }
-    
-    func getPlainText(url: URL) -> String {
-        let exp = expectation(description: "")
-        
-        var result: String!
-        
-        downloader.download(url: url, type: .plainText) { (content) in
+        downloader.download(url: url, type: type) { (content) in
             result = content!
             exp.fulfill()
         }

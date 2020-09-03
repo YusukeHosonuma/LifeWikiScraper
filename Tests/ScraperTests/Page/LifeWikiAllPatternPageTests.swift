@@ -13,7 +13,7 @@ class LifeWikiAllPatternPageTests: XCTestCase {
     func testNext() throws {
         // Page 1.
         do {
-            let html = getHTML("https://www.conwaylife.com/wiki/Category:Patterns")
+            let html = getContent("https://www.conwaylife.com/wiki/Category:Patterns", type: .html)
             let page = LifeWikiAllPatternPage(html: html)
             XCTAssertEqual(page.links.first, URL(string: "https://www.conwaylife.com/wiki/$rats")!)
             XCTAssertEqual(page.links.count, 200)
@@ -22,7 +22,7 @@ class LifeWikiAllPatternPageTests: XCTestCase {
         
         // Page 2.
         do {
-            let html = getHTML("https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Beacon+on+cover#mw-pages")
+            let html = getContent("https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Beacon+on+cover#mw-pages", type: .html)
             let page = LifeWikiAllPatternPage(html: html)
             XCTAssertEqual(page.links.first, URL(string: "https://www.conwaylife.com/wiki/Beacon_on_cover")!)
             XCTAssertEqual(page.nextLink, URL(string: "https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Cis-boat+on+dock#mw-pages")!)
@@ -30,7 +30,7 @@ class LifeWikiAllPatternPageTests: XCTestCase {
         
         // Page 7. (last)
         do {
-            let html = getHTML("https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Tail#mw-pages")
+            let html = getContent("https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Tail#mw-pages", type: .html)
             let page = LifeWikiAllPatternPage(html: html)
             XCTAssertEqual(page.links.first, URL(string: "https://www.conwaylife.com/wiki/Tail")!)
             XCTAssertEqual(page.links.last, URL(string: "https://www.conwaylife.com/wiki/Zweiback")!)
