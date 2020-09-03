@@ -25,10 +25,14 @@ public struct LifeWikiRLE {
     public let sourceURL: URL
     
     public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE?, Never> {
-        downloader.downloadPublisher(url: url)
+        downloader.downloadPublisher(url: url, type: .plainText)
             .map { text in
+                guard let text = text else {
+                    print("❌ RLE is can't fetched (\(url))")
+                    return nil
+                }
                 print("🌎 RLE fetched (\(url))")
-                return LifeWikiRLE(text: text!, source: url) // TODO: 暫定（エラー型を扱ったほうがよさそう）
+                return LifeWikiRLE(text: text, source: url) // TODO: 暫定（エラー型を扱ったほうがよさそう）
             }
             .eraseToAnyPublisher()
     }
@@ -56,7 +60,7 @@ public struct LifeWikiRLE {
         guard
             let x = meta["x"].flatMap(Int.init),
             let y = meta["y"].flatMap(Int.init) else {
-            print("⏭ Parse process is skpped because board size is missing.")
+            print("⏭ Parse process is skpped because board size is missing. (\(source)")
             return nil
         }
 

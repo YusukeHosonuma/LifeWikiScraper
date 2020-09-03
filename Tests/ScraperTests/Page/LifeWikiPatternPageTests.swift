@@ -11,9 +11,9 @@ import XCTest
 class LifeWikiPatternPageTests: XCTestCase {
     
     // $rats
-    func testExample1() {
+    func testExample1() throws {
         let url = URL(string: "https://www.conwaylife.com/wiki/$rats")!
-        let page = LifeWikiPatternPage(html: getHTML(url: url), source: url)
+        let page = try XCTUnwrap(LifeWikiPatternPage(html: getHTML(url: url), source: url))
         XCTAssertEqual(page.title, "$rats")
         XCTAssertEqual(page.patternType, "Oscillator")
         XCTAssertEqual(page.discoveredBy, "David Buckingham")
@@ -26,9 +26,9 @@ class LifeWikiPatternPageTests: XCTestCase {
     }
     
     // 31_Pseudo-B_climber
-    func testExample2() {
+    func testExample2() throws {
         let url = URL(string: "https://www.conwaylife.com/wiki/(13,1)c/31_Pseudo-B_climber")!
-        let page = LifeWikiPatternPage(html: getHTML(url: url), source: url)
+        let page = try XCTUnwrap(LifeWikiPatternPage(html: getHTML(url: url), source: url))
         XCTAssertEqual(page.title, "(13,1)c/31 Pseudo-B climber")
         XCTAssertEqual(page.patternType, "Crawler")
         XCTAssertEqual(page.discoveredBy, "Unknown")
@@ -40,9 +40,9 @@ class LifeWikiPatternPageTests: XCTestCase {
     }
     
     // B-heptomino
-    func testExample3() {
+    func testExample3() throws {
         let url = URL(string: "https://www.conwaylife.com/wiki/B-heptomino")!
-        let page = LifeWikiPatternPage(html: getHTML(url: url), source: url)
+        let page = try XCTUnwrap(LifeWikiPatternPage(html: getHTML(url: url), source: url))
         XCTAssertEqual(page.title, "B-heptomino")
         XCTAssertEqual(page.patternType, "Methuselah")
         XCTAssertEqual(page.discoveredBy, "John Conway")
@@ -52,5 +52,17 @@ class LifeWikiPatternPageTests: XCTestCase {
         XCTAssertEqual(page.rleURL,
                        URL(string: "https://www.conwaylife.com/patterns/bheptomino.rle"))
         XCTAssertEqual(page.sourceURL, url)
+    }
+    
+    func testExample4() throws {
+        let url = URL(string: "https://conwaylife.com/wiki/Reverse_caber-tosser")!
+        let page = LifeWikiPatternPage(html: getHTML(url: url), source: url)
+        XCTAssertNil(page)
+    }
+    
+    func testExample5() throws {
+        let url = URL(string: "https://conwaylife.com/wiki/Reverse_caber-tosser")!
+        let page = LifeWikiPatternPage(html: getHTML(url: url), source: url)
+        XCTAssertNil(page)
     }
 }

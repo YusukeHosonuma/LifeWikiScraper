@@ -13,13 +13,32 @@ import CryptoKit
 // TODO: 本当は`Logger`を使ったほうがいい。
 
 extension CachedHTTPTextDownloader {
-    func downloadPublisher(url: URL) -> AnyPublisher<String?, Never> {
+    func downloadPublisher(url: URL, type: ContentType) -> AnyPublisher<String?, Never> {
         Future<String?, Never> { promise in
-            self.download(url: url) { (content) in
+            self.download(url: url, type: type) { (content) in
                 promise(.success(content))
             }
         }
+        .retry(3)
         .eraseToAnyPublisher()
+    }
+}
+
+enum ContentType {
+    case html
+    case plainText
+}
+
+extension ContentType {
+    // TODO: ちょっとやっつけではあるが・・・
+    var encoding: String.Encoding {
+        switch self {
+        case .html:
+            return .utf8
+            
+        case .plainText:
+            return .ascii
+        }
     }
 }
 
@@ -38,27 +57,38 @@ final class CachedHTTPTextDownloader {
         self.useMD5 = useMD5
     }
     
-    func download(url: URL, completion: @escaping (String?) -> Void) {
+    func download(url: URL, type: ContentType, completion: @escaping (String?) -> Void) {
         if let content = loadCache(source: url) {
             completion(content)
         } else {
-            downloadFromNetwork(url: url, completion: completion)
+            downloadFromNetwork(url: url, type: type, completion: completion)
         }
     }
     
     // MARK: Private
     
-    private func downloadFromNetwork(url: URL, completion: @escaping (String?) -> Void) {
+    private func downloadFromNetwork(url: URL, type: ContentType, completion: @escaping (String?) -> Void) {
         URLSession.shared
             .dataTask(with: url) { (data: Data?, res: URLResponse?, err: Error?) in
-                guard let data = data, let html = String(data: data, encoding: .utf8) else {
+                guard let data = data else {
                     print("❌ Failed to download from network. \(url)")
                     completion(nil)
                     return
                 }
+                
+                guard let html = String(data: data, encoding: type.encoding) else {
+                    print("❌ Failed to decode. \(url)")
+                    completion(nil)
+                    return
+                }
+                
                 print("☁️ Loaded from network. (\(url))")
                 self.saveCache(source: url, content: html)
-                completion(html)
+                
+                // これを入れても RunLoop が止まってしまうっぽいので不要かも？
+                DispatchQueue.main.async {
+                    completion(html)
+                }
             }.resume()
     }
     

@@ -21,15 +21,20 @@ public struct LifeWikiPatternPage {
     public let rleURL: URL?
     public let sourceURL: URL
     
-    public static func fetch(url: URL) -> AnyPublisher<LifeWikiPatternPage, Never> {
-        downloader.downloadPublisher(url: url)
+    public static func fetch(url: URL) -> AnyPublisher<LifeWikiPatternPage?, Never> {
+        downloader.downloadPublisher(url: url, type: .html)
             .map { html in
-                LifeWikiPatternPage(html: html!, source: url)
+                guard let html = html else {
+                    print("⏭ Pattern page is not fetched (\(url))")
+                    return nil
+                }
+                print("🔍 Parse LifeWikiPatternPage is started. (\(url))")
+                return LifeWikiPatternPage(html: html, source: url)
             }
             .eraseToAnyPublisher()
     }
     
-    public init(html: String, source: URL) {
+    public init?(html: String, source: URL) {
         self.sourceURL = source
         
         let doc = try! SwiftSoup.parse(html)
@@ -50,6 +55,10 @@ public struct LifeWikiPatternPage {
         }
         
         // .inbox
+        guard let _ = try! doc.select(".infobox").first() else {
+            print("⏭ .infobox is not found. (\(source))")
+            return nil
+        }
         patternType = Self.valueFromInfoTable(doc, name: "Pattern type")
         discoveredBy = Self.valueFromInfoTable(doc, name: "Discovered by")
         yearOfDiscovery = Self.valueFromInfoTable(doc, name: "Year of discovery")

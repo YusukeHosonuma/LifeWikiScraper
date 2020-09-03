@@ -21,11 +21,24 @@ extension XCTestCase {
         
         var result: String!
         
-        downloader.download(url: url) { (content) in
+        downloader.download(url: url, type: .html) { (content) in
             result = content!
             exp.fulfill()
         }
-        wait(for: [exp], timeout: 3.0)
+        wait(for: [exp], timeout: 10.0)
+        return result
+    }
+    
+    func getPlainText(url: URL) -> String {
+        let exp = expectation(description: "")
+        
+        var result: String!
+        
+        downloader.download(url: url, type: .plainText) { (content) in
+            result = content!
+            exp.fulfill()
+        }
+        wait(for: [exp], timeout: 10.0)
         return result
     }
 }

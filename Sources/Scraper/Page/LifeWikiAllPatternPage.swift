@@ -13,15 +13,19 @@ private let firstPageURL = URL(string: "https://www.conwaylife.com/wiki/Category
 private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/all/"), useMD5: true)
 
 public struct LifeWikiAllPatternPage {
-    public let links: [URL]
-    public let nextLink: URL?
-    
+    let links: [URL]
+    let nextLink: URL?
+
+    public var patternLinks: [URL] {
+        links.filter { !$0.isTemplateURL }
+    }
+
     public static func fetchAll() -> AnyPublisher<[LifeWikiAllPatternPage], Never> {
         fetchToTail(url: firstPageURL)
     }
 
     public static func fetch(url: URL) -> AnyPublisher<LifeWikiAllPatternPage?, Never> {
-        return downloader.downloadPublisher(url: url)
+        return downloader.downloadPublisher(url: url, type: .html)
             .map { html in
                 LifeWikiAllPatternPage(html: html!)
             }

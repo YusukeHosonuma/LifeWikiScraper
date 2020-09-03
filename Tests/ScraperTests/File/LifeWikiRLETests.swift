@@ -102,6 +102,14 @@ final class LifeWikiRLETests: XCTestCase {
 //        XCTAssertEqual(rle.rule, "B3/S23")
     }
     
+    // TODO: かなり重いので改善したい（ファイルがデカイ）
+    func testExample4() {
+        let url = URL(string: "https://www.conwaylife.com/patterns/caterloopillar31c240.rle")!
+        let text = getPlainText(url: url)
+        let rle = LifeWikiRLE(text: text, source: url)
+        XCTAssertNil(rle)
+    }
+    
     // MARK: Private
     
     private func assertCells(_ cells: [Int], size: Int, expectPlainText: String) {
