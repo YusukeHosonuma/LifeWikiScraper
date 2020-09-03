@@ -26,6 +26,17 @@ public final class LifeWikiPatternHolder {
         }
     }
     
+    public static func load(_ url: URL) -> LifeWikiPattern {
+        do {
+            let path = filePath(url)
+            let data = try Data(contentsOf: path)
+            let decoder = JSONDecoder()
+            return try decoder.decode(LifeWikiPattern.self, from: data)
+        } catch {
+            fatalError(error.localizedDescription)
+        }
+    }
+    
     static func filePath(_ sourceURL: URL) -> URL {
         URL(fileURLWithPath: "/Users/hosonumayuusuke/Downloads/Patterns/")
             .appendingPathComponent(sourceURL.lastPathComponent)

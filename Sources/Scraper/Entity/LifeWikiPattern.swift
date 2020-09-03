@@ -6,6 +6,13 @@
 //
 
 import Foundation
+import Combine
+
+public enum ScrapeError: Error {
+    case patternPageNotFound
+    case rleLinkMissing
+    case rleNotFound
+}
 
 public struct LifeWikiPattern: Codable {
     public let title: String
@@ -18,6 +25,47 @@ public struct LifeWikiPattern: Codable {
     public let cells: [Int]
     public let sourceURL: URL
 
+    public static func fetch(wikiPageURL url: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
+        if LifeWikiPatternHolder.isScraped(url) {
+            return fetchFromLocal(wikiPageURL: url)
+        } else {
+            return fetchFromNetwork(wikiPageURL: url)
+        }
+    }
+
+    private static func fetchFromLocal(wikiPageURL url: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
+        Just<LifeWikiPattern>(LifeWikiPatternHolder.load(url))
+            .setFailureType(to: ScrapeError.self)
+            .eraseToAnyPublisher()
+    }
+    
+    private static func fetchFromNetwork(wikiPageURL url: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
+        if #available(OSX 11.0, *) {
+            typealias FailScrape = Fail<LifeWikiPattern, ScrapeError>
+            return LifeWikiPatternPage.fetch(url: url)
+                .flatMap { (page: LifeWikiPatternPage?) -> AnyPublisher<LifeWikiPattern, ScrapeError> in
+                    guard let page = page else {
+                        return FailScrape(error: .patternPageNotFound).eraseToAnyPublisher()
+                    }
+                    guard let url = page.rleURL else {
+                        return FailScrape(error: .rleLinkMissing).eraseToAnyPublisher()
+                    }
+                    
+                    return LifeWikiRLE.fetch(url: url)
+                        .tryMap { (rle: LifeWikiRLE?) in
+                            guard let rle = rle else { throw ScrapeError.rleNotFound }
+                            return LifeWikiPattern(page: page, rle: rle)
+                        }
+                        .mapError { $0 as! ScrapeError }
+                        .eraseToAnyPublisher()
+                }
+                .eraseToAnyPublisher()
+            
+        } else {
+            fatalError() // 💥 とりあえず落としてしまう
+        }
+    }
+    
     public init(page: LifeWikiPatternPage, rle: LifeWikiRLE) {
         // From page:
         self.title           = page.title
