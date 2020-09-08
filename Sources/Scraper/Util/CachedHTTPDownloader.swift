@@ -86,9 +86,7 @@ final class CachedHTTPTextDownloader {
                 self.saveCache(source: url, content: html)
                 
                 // これを入れても RunLoop が止まってしまうっぽいので不要かも？
-                DispatchQueue.main.async {
-                    completion(html)
-                }
+                completion(html)
             }.resume()
     }
     
