@@ -10,16 +10,16 @@ typealias ScrapeResult = Result<LifeWikiPattern, ScrapeError>
 
 func scrapeLifeWikiPatterns() -> AnyPublisher<[ScrapeResult], Never> {
     LifeWikiAllPatternPage.fetchAll()
-        .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[ScrapeResult], Never> in
-            let urls = pages.map(\.patternLinks).joined()
-            return urls.map { url in
+        .map { $0.map(\.patternLinks).joined() }
+        .flatMap { urls in
+            Publishers.MergeMany(urls.map { url in
                 LifeWikiPattern.fetch(wikiPageURL: url)
                     .map { Result.success($0) }
                     .catch { Just(Result.failure($0)) }
                     .eraseToAnyPublisher()
-            }
-            .waitAll() // ⭐
+            })
         }
+        .collect()
         .eraseToAnyPublisher()
 }
 
