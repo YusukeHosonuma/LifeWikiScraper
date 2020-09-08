@@ -6,24 +6,19 @@ import Combine
 
 let fetchCount = 100 // 最後には全部取得するので不要になる
 
-func scrapeLifeWikiPatterns() -> AnyPublisher<[Result<LifeWikiPattern, ScrapeError>], Never> {
+typealias ScrapeResult = Result<LifeWikiPattern, ScrapeError>
+
+func scrapeLifeWikiPatterns() -> AnyPublisher<[ScrapeResult], Never> {
     LifeWikiAllPatternPage.fetchAll()
-        .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[Result<LifeWikiPattern, ScrapeError>], Never> in
+        .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[ScrapeResult], Never> in
             let urls = pages.map(\.patternLinks).joined()
-            let initial = Just([Result<LifeWikiPattern, ScrapeError>]()).eraseToAnyPublisher()
-            return urls.reduce(initial) { result, url in
-                result.zip(
-                    LifeWikiPattern.fetch(wikiPageURL: url)
-                        .map { pattern ->  Result<LifeWikiPattern, ScrapeError> in
-                            Result<LifeWikiPattern, ScrapeError>.success(pattern)
-                        }
-                        .catch { error in
-                            Just(Result<LifeWikiPattern, ScrapeError>.failure(error))
-                        }
-                        .eraseToAnyPublisher()
-                ) { $0 + [$1] }
-                .eraseToAnyPublisher()
+            return urls.map { url in
+                LifeWikiPattern.fetch(wikiPageURL: url)
+                    .map { Result.success($0) }
+                    .catch { Just(Result.failure($0)) }
+                    .eraseToAnyPublisher()
             }
+            .waitAll() // ⭐
         }
         .eraseToAnyPublisher()
 }
@@ -34,25 +29,40 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
     let start = Date()
     
     scrapeLifeWikiPatterns()
-        .sink { (patterns: [Result<LifeWikiPattern, ScrapeError>]) in
-            for pattern in patterns {
-                switch pattern {
-                case let .success(pattern):
-                    print("🍎 '\(pattern.title)' is scraped.")
-                
-                case let .failure(error):
-                    switch error {
-                    case .patternPageNotFound:
-                        print("🍏 ページ見つかんなかったよ。")
-                    case .rleLinkMissing:
-                        print("🍊 RLEリンクなかったよ。")
-                    case .rleNotFound:
-                        print("🍇 RLEファイル無かったよ。")
-                    }
+        .sink { (results: [Result<LifeWikiPattern, ScrapeError>]) in
+            
+            // TODO: guard let つかえばもうちょいきれいになりそう
+            
+            let patterns: [LifeWikiPattern] = results.compactMap {
+                switch $0 {
+                case .success(let pattern): return pattern
+                case .failure(_): return nil
                 }
             }
-            print("⭐ Scraping is finished. (total: \(patterns.count))")
             
+            let errors: [ScrapeError] = results.compactMap {
+                switch $0 {
+                case .success(_): return nil
+                case .failure(let error): return error
+                }
+            }
+            
+            print("⭐ Scraping is finished. (success: \(patterns.count), fail: \(errors.count),  total: \(results.count))")
+            print()
+            
+            print("❌ Fails:")
+            for error in errors {
+                switch error {
+                case .patternPageNotFound:
+                    print("- \(error.localizedDescription)")
+                case .rleLinkMissing:
+                    print("- \(error.localizedDescription)")
+                case .rleNotFound:
+                    print("- \(error.localizedDescription)")
+                }
+            }
+            print()
+
             let elapsed = Date().timeIntervalSince(start)
             print("🌈 Finish! (\(elapsed))")
             

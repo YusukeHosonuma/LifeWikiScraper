@@ -8,12 +8,6 @@
 import Foundation
 import Combine
 
-public enum ScrapeError: Error {
-    case patternPageNotFound
-    case rleLinkMissing
-    case rleNotFound
-}
-
 public struct LifeWikiPattern: Codable {
     public let title: String
     public let patternType: String
@@ -39,21 +33,21 @@ public struct LifeWikiPattern: Codable {
             .eraseToAnyPublisher()
     }
     
-    private static func fetchFromNetwork(wikiPageURL url: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
+    private static func fetchFromNetwork(wikiPageURL: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
         if #available(OSX 11.0, *) {
             typealias FailScrape = Fail<LifeWikiPattern, ScrapeError>
-            return LifeWikiPatternPage.fetch(url: url)
+            return LifeWikiPatternPage.fetch(url: wikiPageURL)
                 .flatMap { (page: LifeWikiPatternPage?) -> AnyPublisher<LifeWikiPattern, ScrapeError> in
                     guard let page = page else {
-                        return FailScrape(error: .patternPageNotFound).eraseToAnyPublisher()
+                        return FailScrape(error: .patternPageNotFound(wikiPageURL: wikiPageURL)).eraseToAnyPublisher()
                     }
                     guard let url = page.rleURL else {
-                        return FailScrape(error: .rleLinkMissing).eraseToAnyPublisher()
+                        return FailScrape(error: ScrapeError.rleLinkMissing(wikiPageURL: wikiPageURL)).eraseToAnyPublisher()
                     }
                     
                     return LifeWikiRLE.fetch(url: url)
                         .tryMap { (rle: LifeWikiRLE?) in
-                            guard let rle = rle else { throw ScrapeError.rleNotFound }
+                            guard let rle = rle else { throw ScrapeError.rleNotFound(url: url) }
                             return LifeWikiPattern(page: page, rle: rle)
                         }
                         .mapError { $0 as! ScrapeError }
