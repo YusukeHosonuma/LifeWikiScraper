@@ -8,13 +8,13 @@
 import Foundation
 import Combine
 
-typealias Handler = (Subscribers.Sink<Int, Never>) -> Void
 
-struct SomePublisher<S>: Combine.Publisher where S: Subscriber, S.Input == Int, S.Failure == Never {
+struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publisher {
     
-    typealias Output = Int
-    typealias Failure = Never
-    
+    typealias Output = SubscriberInput
+    typealias Failure = SubscriberFailure
+    typealias Handler = (Subscribers.Sink<SubscriberInput, SubscriberFailure>) -> Void
+
     let handler: Handler
 
     init(_ handler: @escaping Handler) {
@@ -28,20 +28,20 @@ struct SomePublisher<S>: Combine.Publisher where S: Subscriber, S.Input == Int, 
 }
 
 extension SomePublisher {
-    final class Subscription<DownStream: Combine.Subscriber>: Combine.Subscription where DownStream.Input == Int, DownStream.Failure == Never {
+    final class Subscription<DownStream: Combine.Subscriber>: Combine.Subscription where DownStream.Input == Output, DownStream.Failure == Failure {
         
         private let lock = NSRecursiveLock()
         
-        var upstream: Subscribers.Sink<Int, Never>?
+        var upstream: Subscribers.Sink<Output, Failure>?
         var downStream: DownStream?
         let handler: Handler
         
         var demand: Subscribers.Demand = .none
-        var completion: Subscribers.Completion<Never>?
+        var completion: Subscribers.Completion<Failure>?
         
-        var buffer = [Int]()
+        var buffer = [Output]()
         
-        init(_ handler: @escaping Handler, downStream: DownStream) {
+        init(_ handler: @escaping (Subscribers.Sink<Output, Failure>) -> Void, downStream: DownStream) {
             self.handler = handler
             self.downStream = downStream
         }

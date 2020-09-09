@@ -128,9 +128,9 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
  */
 
 LifeWikiAllPatternPageScraper.startFetchAllPages2()
-    .flatMap(maxPublishers: .max(2)) { value -> Future<Int, Never> in
+    .flatMap(maxPublishers: .max(2)) { value -> Future<String, Never> in
         print("🍏 \(value)")
-        return Future<Int, Never> { promise in
+        return Future<String, Never> { promise in
             DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
                 promise(.success(value))
             }
@@ -142,8 +142,6 @@ LifeWikiAllPatternPageScraper.startFetchAllPages2()
         print("🍊 \(value)")
     }
     .store(in: &cancellables)
-
-
 
 let customMode = "LifeGameScraper"
 RunLoop.current.run(mode: RunLoop.Mode(customMode), before: Date.distantFuture)
