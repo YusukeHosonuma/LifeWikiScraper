@@ -20,6 +20,20 @@ public final class LifeWikiAllPatternPageScraper {
         fetchToTailPage(url: LifeWikiAllPatternPage.firstPageURL)
     }
     
+    public static func startFetchAllPages2() -> AnyPublisher<Int, Never> {
+        SomePublisher<Subscribers.Sink<Int, Never>> { subscriber in
+            print("🍎 Start")
+            _ = subscriber.receive(1)
+            _ = subscriber.receive(2)
+            _ = subscriber.receive(3)
+            _ = subscriber.receive(4)
+            _ = subscriber.receive(5)
+            subscriber.receive(completion: .finished)
+        }
+        //.print("🟦")
+        .eraseToAnyPublisher()
+    }
+
     private func fetchToTailPage(url: URL?) {
         guard let url = url else {
             _fetchPageSubject.send(completion: .finished)

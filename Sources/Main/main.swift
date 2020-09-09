@@ -78,6 +78,7 @@ func outputReport(results: [ScrapeResult], startTime: Date) {
     print("🌈 Finish! (\(elapsed))")
 }
 
+/*
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
     executeParallelScraper()
     return
@@ -124,6 +125,25 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 //        }
 //        .store(in: &cancellables)
 }
+ */
+
+LifeWikiAllPatternPageScraper.startFetchAllPages2()
+    .flatMap(maxPublishers: .max(2)) { value -> Future<Int, Never> in
+        print("🍏 \(value)")
+        return Future<Int, Never> { promise in
+            DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
+                promise(.success(value))
+            }
+        }
+    }
+    .sink { completion in
+        print("⭐ \(completion)")
+    } receiveValue: { value in
+        print("🍊 \(value)")
+    }
+    .store(in: &cancellables)
+
+
 
 let customMode = "LifeGameScraper"
 RunLoop.current.run(mode: RunLoop.Mode(customMode), before: Date.distantFuture)
