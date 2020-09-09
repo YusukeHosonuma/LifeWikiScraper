@@ -9,10 +9,11 @@ import SwiftSoup
 import Foundation
 import Combine
 
-private let firstPageURL = URL(string: "https://www.conwaylife.com/wiki/Category:Patterns")!
 private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/all/"), useMD5: true)
 
 public struct LifeWikiAllPatternPage {
+    static let firstPageURL = URL(string: "https://www.conwaylife.com/wiki/Category:Patterns")!
+
     let links: [URL]
     let nextLink: URL?
 

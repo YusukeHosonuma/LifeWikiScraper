@@ -15,9 +15,11 @@ import CryptoKit
 extension CachedHTTPTextDownloader {
     func downloadPublisher(url: URL, type: ContentType) -> AnyPublisher<String?, Never> {
         Future<String?, Never> { promise in
-            self.download(url: url, type: type) { (content) in
-                promise(.success(content))
-            }
+//            DispatchQueue.global().async {
+                self.download(url: url, type: type) { (content) in
+                    promise(.success(content))
+                }
+//            }
         }
         .retry(3)
         .eraseToAnyPublisher()

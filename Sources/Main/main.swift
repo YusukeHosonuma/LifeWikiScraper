@@ -6,7 +6,31 @@ import Combine
 
 let fetchCount = 100 // 最後には全部取得するので不要になる
 
+var cancellables: [AnyCancellable] = []
+
 typealias ScrapeResult = Result<LifeWikiPattern, ScrapeError>
+
+func executeParallelScraper() {
+    let startTime = Date()
+    
+    let scraper = LifeWikiAllPatternPageScraper()
+    scraper.fetchPageSubject
+        .map(\.patternLinks)
+        .flatMap { urls in
+            Publishers.MergeMany(urls.map { url in
+                LifeWikiPattern.fetch(wikiPageURL: url)
+                    .map { Result.success($0) }
+                    .catch { Just(Result.failure($0)) }
+                    .eraseToAnyPublisher()
+            })
+        }
+        .collect()
+        .sink { results in
+            outputReport(results: results, startTime: startTime)
+        }
+        .store(in: &cancellables)
+    scraper.startFetchAllPages()
+}
 
 func scrapeLifeWikiPatterns() -> AnyPublisher<[ScrapeResult], Never> {
     LifeWikiAllPatternPage.fetchAll()
@@ -23,123 +47,82 @@ func scrapeLifeWikiPatterns() -> AnyPublisher<[ScrapeResult], Never> {
         .eraseToAnyPublisher()
 }
 
-var cancellables: [AnyCancellable] = []
+func outputReport(results: [ScrapeResult], startTime: Date) {
+    let patterns: [LifeWikiPattern] = results.compactMap {
+        guard case .success(let pattern) = $0 else { return nil }
+        return pattern
+    }
+    
+    let errors: [ScrapeError] = results.compactMap {
+        guard case .failure(let error) = $0 else { return nil }
+        return error
+    }
+    
+    print("⭐ Scraping is finished. (success: \(patterns.count), fail: \(errors.count),  total: \(results.count))")
+    print()
+    
+    print("❌ Fails:")
+    for error in errors {
+        switch error {
+        case .patternPageNotFound:
+            print("- \(error.localizedDescription)")
+        case .rleLinkMissing:
+            print("- \(error.localizedDescription)")
+        case .rleNotFound:
+            print("- \(error.localizedDescription)")
+        }
+    }
+    print()
+
+    let elapsed = Date().timeIntervalSince(startTime)
+    print("🌈 Finish! (\(elapsed))")
+}
 
 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-    let start = Date()
-    
-    scrapeLifeWikiPatterns()
-        .sink { (results: [Result<LifeWikiPattern, ScrapeError>]) in
-            
-            // TODO: guard let つかえばもうちょいきれいになりそう
-            
-            let patterns: [LifeWikiPattern] = results.compactMap {
-                switch $0 {
-                case .success(let pattern): return pattern
-                case .failure(_): return nil
-                }
-            }
-            
-            let errors: [ScrapeError] = results.compactMap {
-                switch $0 {
-                case .success(_): return nil
-                case .failure(let error): return error
-                }
-            }
-            
-            print("⭐ Scraping is finished. (success: \(patterns.count), fail: \(errors.count),  total: \(results.count))")
-            print()
-            
-            print("❌ Fails:")
-            for error in errors {
-                switch error {
-                case .patternPageNotFound:
-                    print("- \(error.localizedDescription)")
-                case .rleLinkMissing:
-                    print("- \(error.localizedDescription)")
-                case .rleNotFound:
-                    print("- \(error.localizedDescription)")
-                }
-            }
-            print()
+    executeParallelScraper()
+    return
 
-            let elapsed = Date().timeIntervalSince(start)
-            print("🌈 Finish! (\(elapsed))")
-            
-            exit(0)
-        }
-        .store(in: &cancellables)
-//    let start = Date()
+//    scrapeLifeWikiPatterns()
+//        .sink { (results: [Result<LifeWikiPattern, ScrapeError>]) in
 //
-//    _ = LifeWikiAllPatternPage.fetchAll()
-//        .flatMap { (pages: [LifeWikiAllPatternPage]) -> AnyPublisher<[LifeWikiPatternPage], Never> in
-//            print("⚡️ Start fetch Pattern pages.")
-//            let initial = Just([LifeWikiPatternPage]()).eraseToAnyPublisher()
-//            return pages.map(\.patternLinks).joined()
-//                .prefix(fetchCount)
-//                .reduce(initial) { (result, link) in
-//                    result.zip(LifeWikiPatternPage.fetch(url: link))
-//                        .map { (result: [LifeWikiPatternPage], page: LifeWikiPatternPage?) in
-//                            guard let page = page else { return result }
-//                            return result + [page]
-//                        }
-//                        .eraseToAnyPublisher()
+//            // TODO: guard let つかえばもうちょいきれいになりそう
+//
+//            let patterns: [LifeWikiPattern] = results.compactMap {
+//                switch $0 {
+//                case .success(let pattern): return pattern
+//                case .failure(_): return nil
 //                }
-//        }
-//        .map { (pages: [LifeWikiPatternPage]) in
-//            pages.filter {
-//                let isScraped = LifeWikiPatternHolder.isScraped($0.sourceURL)
-//                if isScraped {
-//                    print("🌤 Skip because already scraped. (\($0.sourceURL))")
-//                }
-//                return !isScraped
 //            }
-//        }
-//        .flatMap { (pages: [LifeWikiPatternPage]) -> AnyPublisher<[(LifeWikiPatternPage, LifeWikiRLE?)], Never> in
-//            print("⚡️ Start fetch RLE.")
-//            let initial = Just([LifeWikiRLE?]()).eraseToAnyPublisher()
-//            return pages
-//                .reduce(initial) { (result, page) in
-//                    let rlePublisher: AnyPublisher<LifeWikiRLE?, Never>
 //
-//                    if let url = page.rleURL {
-//                        rlePublisher = LifeWikiRLE.fetch(url: url)
-//                    } else {
-//                        print("⏭ Skipped because RLE is not found (\(page.sourceURL))")
-//                        rlePublisher = Just<LifeWikiRLE?>(nil).eraseToAnyPublisher()
-//                    }
-//
-//                    return result.zip(rlePublisher)
-//                        .map { $0.0 + [$0.1] }
-//                        .eraseToAnyPublisher()
+//            let errors: [ScrapeError] = results.compactMap {
+//                switch $0 {
+//                case .success(_): return nil
+//                case .failure(let error): return error
 //                }
-//                .map { rles in
-//                    Array(zip(pages, rles))
-//                }
-//                .eraseToAnyPublisher()
-//        }
-//        .sink { results in
-//            let patterns = results
-//                .compactMap {
-//                    guard let rle = $0.1 else { return nil }
-//                    return ($0.0, rle)
-//                }
-//                .map { page, rle in
-//                    LifeWikiPattern(page: page, rle: rle)
-//                }
-//
-//            print("⭐ Found \(patterns.count) pages.")
-//
-//            for pattern in patterns {
-//                print("📁 Save \(pattern.title)...")
-//                LifeWikiPatternHolder.write(pattern)
 //            }
+//
+//            print("⭐ Scraping is finished. (success: \(patterns.count), fail: \(errors.count),  total: \(results.count))")
+//            print()
+//
+//            print("❌ Fails:")
+//            for error in errors {
+//                switch error {
+//                case .patternPageNotFound:
+//                    print("- \(error.localizedDescription)")
+//                case .rleLinkMissing:
+//                    print("- \(error.localizedDescription)")
+//                case .rleNotFound:
+//                    print("- \(error.localizedDescription)")
+//                }
+//            }
+//            print()
 //
 //            let elapsed = Date().timeIntervalSince(start)
 //            print("🌈 Finish! (\(elapsed))")
 //
 //            exit(0)
 //        }
+//        .store(in: &cancellables)
 }
 
 let customMode = "LifeGameScraper"
