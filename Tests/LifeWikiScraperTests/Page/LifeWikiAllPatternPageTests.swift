@@ -7,7 +7,7 @@
 
 import XCTest
 import Combine
-@testable import Scraper
+@testable import LifeWikiScraper
 
 class LifeWikiAllPatternPageTests: XCTestCase {
     func testNext() throws {

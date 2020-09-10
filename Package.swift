@@ -25,7 +25,7 @@ let package = Package(
             name: "LifeWikiScraper",
             dependencies: ["SwiftSoup", "SwiftRLE"]),
         .testTarget(
-            name: "ScraperTests",
+            name: "LifeWikiScraperTests",
             dependencies: ["LifeWikiScraper"]),
     ]
 )
