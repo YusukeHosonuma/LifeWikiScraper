@@ -11,7 +11,7 @@ import Combine
 public enum LifeWiki {
     public typealias ScrapeResult = Result<LifeWikiPattern, ScrapeError>
     
-    public static func scrapePatterns() -> AnyPublisher<[ScrapeResult], Never> {
+    public static func scrapePatterns() -> AnyPublisher<ScrapeResult, Never> {
         LifeWikiAllPatternPageScraper().fetchAll()
             .map(\.patternLinks)
             .flatMap { urls in
@@ -21,7 +21,6 @@ public enum LifeWiki {
                         .catch { Just(Result.failure($0)) }
                 })
             }
-            .collect()
             .eraseToAnyPublisher()
     }
 }

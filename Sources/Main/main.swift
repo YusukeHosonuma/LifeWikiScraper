@@ -7,6 +7,7 @@ var cancellables: [AnyCancellable] = []
 func main() {
     let startTime = Date()
     LifeWiki.scrapePatterns()
+        .collect()
         .sink { results in
             outputReport(results: results, startTime: startTime)
             exit(0) // 🚫
