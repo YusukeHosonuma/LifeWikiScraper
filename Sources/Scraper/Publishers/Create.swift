@@ -41,32 +41,20 @@ extension Publishers.Create {
         private var buffer = [Output]()
         private var completion: Subscribers.Completion<Failure>?
         
-        init(_ handler: @escaping Handler, downstream: Down) {
+        init(_ handler: Handler, downstream: Down) {
             self.downstream = downstream
             
-            let subscriber = Subscriber(onSend: { self.buffer.append($0) },
-                                        onComplete: { self.completion = $0 })
+            let subscriber = Subscriber(onSend: { self.enqueu($0) },
+                                        onComplete: { self.completion = $0; self.flush() })
             cancellable = handler(subscriber)
         }
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
             defer { lock.unlock() }
-            
+
             self.demand += demand
-            
-            guard let downStream = downstream else { return }
-            
-            while self.demand > .none, !buffer.isEmpty {
-                self.demand -= 1
-                let value = buffer.removeFirst()
-                let newDemand = downStream.receive(value)
-                self.demand += newDemand
-            }
-            
-            if let completion = completion, buffer.isEmpty {
-                downStream.receive(completion: completion)
-            }
+            flush()
         }
         
         func cancel() {
@@ -80,6 +68,32 @@ extension Publishers.Create {
             
             self.downstream = nil
             self.buffer = []
+        }
+        
+        private func enqueu(_ value: Output) {
+            lock.lock()
+            defer { lock.unlock() }
+
+            self.buffer.append(value)
+            self.flush()
+        }
+        
+        private func flush() {
+            lock.lock()
+            defer { lock.unlock() }
+            
+            guard let downStream = downstream else { return }
+            
+            while self.demand > .none, !buffer.isEmpty {
+                self.demand -= 1
+                let value = buffer.removeFirst()
+                let newDemand = downStream.receive(value)
+                self.demand += newDemand
+            }
+            
+            if let completion = completion, buffer.isEmpty {
+                downStream.receive(completion: completion)
+            }
         }
     }
     
