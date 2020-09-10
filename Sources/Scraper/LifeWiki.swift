@@ -8,7 +8,7 @@
 import Foundation
 import Combine
 
-public final class LifeWiki {
+public enum LifeWiki {
     public typealias ScrapeResult = Result<LifeWikiPattern, ScrapeError>
     
     public static func scrapePatterns() -> AnyPublisher<[ScrapeResult], Never> {
