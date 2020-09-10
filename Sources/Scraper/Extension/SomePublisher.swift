@@ -8,6 +8,11 @@
 import Foundation
 import Combine
 
+extension AnyPublisher {
+    init(handler: @escaping SomePublisher<Output, Failure>.Handler) {
+        self = SomePublisher(handler).eraseToAnyPublisher()
+    }
+}
 
 struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publisher {
     
@@ -15,7 +20,7 @@ struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publish
     typealias Failure = SubscriberFailure
     typealias Handler = (Subscriber<SubscriberInput, SubscriberFailure>) -> Cancellable
 
-    let handler: Handler
+    private let handler: Handler
 
     init(_ handler: @escaping Handler) {
         self.handler = handler
@@ -28,20 +33,17 @@ struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publish
 }
 
 extension SomePublisher {
-    final class Subscription<DownStream: Combine.Subscriber>: Combine.Subscription where DownStream.Input == Output, DownStream.Failure == Failure {
+    final class Subscription<Downstream: Combine.Subscriber>: Combine.Subscription where Downstream.Input == Output, Downstream.Failure == Failure {
         
         private let lock = NSRecursiveLock()
+        private var downstream: Downstream?
+        private var cancellable: Cancellable?
+        private var demand: Subscribers.Demand = .none
+        private var buffer = [Output]()
+        private var completion: Subscribers.Completion<Failure>?
         
-        var cancellable: Cancellable?
-        var downStream: DownStream?
-        
-        var demand: Subscribers.Demand = .none
-        var completion: Subscribers.Completion<Failure>?
-        
-        var buffer = [Output]()
-        
-        init(_ handler: @escaping Handler, downStream: DownStream) {
-            self.downStream = downStream
+        init(_ handler: @escaping Handler, downStream: Downstream) {
+            self.downstream = downStream
             
             let subscriber = Subscriber(onSend: { self.buffer.append($0) },
                                         onComplete: { self.completion = $0 })
@@ -54,7 +56,7 @@ extension SomePublisher {
             
             self.demand += demand
             
-            guard let downStream = downStream else { return }
+            guard let downStream = downstream else { return }
             
             while self.demand > .none, !buffer.isEmpty {
                 self.demand -= 1
@@ -69,12 +71,15 @@ extension SomePublisher {
         }
         
         func cancel() {
-            guard let downStream = downStream else { return }
+            lock.lock()
+            defer { lock.unlock() }
+
+            guard let downStream = downstream else { return }
 
             cancellable?.cancel()
             downStream.receive(completion: .finished)
             
-            self.downStream = nil
+            self.downstream = nil
             self.buffer = []
         }
     }

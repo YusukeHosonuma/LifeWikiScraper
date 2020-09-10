@@ -21,9 +21,7 @@ public final class LifeWikiAllPatternPageScraper {
     }
     
     public static func startFetchAllPages2() -> AnyPublisher<String, Never> {
-        SomePublisher { subscriber in
-            print("🍎 Start")
-            // これは冗長なのでなんとかしたい
+        AnyPublisher { subscriber in
             subscriber.send("1")
             subscriber.send("2")
             subscriber.send("3")
@@ -32,7 +30,6 @@ public final class LifeWikiAllPatternPageScraper {
             subscriber.complete(.finished)
             return AnyCancellable {}
         }
-        .eraseToAnyPublisher()
     }
 
     private func fetchToTailPage(url: URL?) {
