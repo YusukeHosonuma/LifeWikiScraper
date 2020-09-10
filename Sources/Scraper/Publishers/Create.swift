@@ -9,27 +9,29 @@ import Foundation
 import Combine
 
 extension AnyPublisher {
-    init(handler: @escaping SomePublisher<Output, Failure>.Handler) {
-        self = SomePublisher(handler).eraseToAnyPublisher()
+    init(handler: @escaping Publishers.Create<Output, Failure>.Handler) {
+        self = Publishers.Create(handler).eraseToAnyPublisher()
     }
 }
 
-struct SomePublisher<Output, Failure: Error>: Combine.Publisher {
-    typealias Handler = (Subscriber) -> Cancellable
+extension Publishers {
+    struct Create<Output, Failure: Error>: Combine.Publisher {
+        typealias Handler = (Subscriber) -> Cancellable
 
-    private let handler: Handler
+        private let handler: Handler
 
-    init(_ handler: @escaping Handler) {
-        self.handler = handler
-    }
-    
-    func receive<S>(subscriber: S) where S : Combine.Subscriber, S.Input == Output, S.Failure == Failure {
-        let subscription = Subscription(handler, downstream: subscriber)
-        subscriber.receive(subscription: subscription)
+        init(_ handler: @escaping Handler) {
+            self.handler = handler
+        }
+        
+        func receive<S>(subscriber: S) where S : Combine.Subscriber, S.Input == Output, S.Failure == Failure {
+            let subscription = Subscription(handler, downstream: subscriber)
+            subscriber.receive(subscription: subscription)
+        }
     }
 }
 
-extension SomePublisher {
+extension Publishers.Create {
     final class Subscription<Down: Combine.Subscriber>: Combine.Subscription where Down.Input == Output, Down.Failure == Failure {
         
         private let lock = NSRecursiveLock()

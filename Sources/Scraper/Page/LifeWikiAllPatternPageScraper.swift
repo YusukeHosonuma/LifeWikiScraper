@@ -27,7 +27,7 @@ public final class LifeWikiAllPatternPageScraper {
         }
     }
     
-    private func fetchToTail(url: URL?, subscriber: SomePublisher<LifeWikiAllPatternPage, Never>.Subscriber) {
+    private func fetchToTail(url: URL?, subscriber: Publishers.Create<LifeWikiAllPatternPage, Never>.Subscriber) {
         guard let url = url else {
             subscriber.send(completion: .finished)
             return
