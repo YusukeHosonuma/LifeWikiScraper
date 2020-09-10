@@ -20,17 +20,43 @@ public final class LifeWikiAllPatternPageScraper {
         fetchToTailPage(url: LifeWikiAllPatternPage.firstPageURL)
     }
     
-    public static func startFetchAllPages2() -> AnyPublisher<String, Never> {
+    public func fetchAll() -> AnyPublisher<LifeWikiAllPatternPage, Never> {
         AnyPublisher { subscriber in
-            subscriber.send("1")
-            subscriber.send("2")
-            subscriber.send("3")
-            subscriber.send("4")
-            subscriber.send("5")
-            subscriber.complete(.finished)
+            self.fetchToTail(url: LifeWikiAllPatternPage.firstPageURL, subscriber: subscriber)
             return AnyCancellable {}
         }
     }
+    
+    private func fetchToTail(url: URL?, subscriber: SomePublisher<LifeWikiAllPatternPage, Never>.Subscriber) {
+        guard let url = url else {
+            subscriber.send(completion: .finished)
+            return
+        }
+        
+        LifeWikiAllPatternPage.fetch(url: url)
+            .sink { page in
+                guard let page = page else {
+                    subscriber.send(completion: .finished)
+                    return
+                }
+                
+                subscriber.send(page)
+                self.fetchToTail(url: page.nextLink, subscriber: subscriber) // ↩️
+            }
+            .store(in: &cancellables)
+    }
+    
+//    public static func startFetchAllPages2() -> AnyPublisher<String, Never> {
+//        AnyPublisher { subscriber in
+//            subscriber.send("1")
+//            subscriber.send("2")
+//            subscriber.send("3")
+//            subscriber.send("4")
+//            subscriber.send("5")
+//            subscriber.complete(.finished)
+//            return AnyCancellable {}
+//        }
+//    }
 
     private func fetchToTailPage(url: URL?) {
         guard let url = url else {

@@ -14,11 +14,8 @@ extension AnyPublisher {
     }
 }
 
-struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publisher {
-    
-    typealias Output = SubscriberInput
-    typealias Failure = SubscriberFailure
-    typealias Handler = (Subscriber<SubscriberInput, SubscriberFailure>) -> Cancellable
+struct SomePublisher<Output, Failure: Error>: Combine.Publisher {
+    typealias Handler = (Subscriber) -> Cancellable
 
     private let handler: Handler
 
@@ -26,24 +23,24 @@ struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publish
         self.handler = handler
     }
     
-    func receive<S>(subscriber: S) where S : Combine.Subscriber, Self.Failure == S.Failure, Self.Output == S.Input {
-        let subscription = Subscription(handler, downStream: subscriber)
+    func receive<S>(subscriber: S) where S : Combine.Subscriber, S.Input == Output, S.Failure == Failure {
+        let subscription = Subscription(handler, downstream: subscriber)
         subscriber.receive(subscription: subscription)
     }
 }
 
 extension SomePublisher {
-    final class Subscription<Downstream: Combine.Subscriber>: Combine.Subscription where Downstream.Input == Output, Downstream.Failure == Failure {
+    final class Subscription<Down: Combine.Subscriber>: Combine.Subscription where Down.Input == Output, Down.Failure == Failure {
         
         private let lock = NSRecursiveLock()
-        private var downstream: Downstream?
+        private var downstream: Down?
         private var cancellable: Cancellable?
         private var demand: Subscribers.Demand = .none
         private var buffer = [Output]()
         private var completion: Subscribers.Completion<Failure>?
         
-        init(_ handler: @escaping Handler, downStream: Downstream) {
-            self.downstream = downStream
+        init(_ handler: @escaping Handler, downstream: Down) {
+            self.downstream = downstream
             
             let subscriber = Subscriber(onSend: { self.buffer.append($0) },
                                         onComplete: { self.completion = $0 })
@@ -84,16 +81,16 @@ extension SomePublisher {
         }
     }
     
-    struct Subscriber<Input, Failure: Error> {
-        let onSend: (Input) -> Void
+    struct Subscriber {
+        let onSend: (Output) -> Void
         let onComplete: (Subscribers.Completion<Failure>) -> Void
         
-        func send(_ value: Input) {
+        func send(_ value: Output) {
             onSend(value)
         }
         
-        func complete(_ complete: Subscribers.Completion<Failure>) {
-            onComplete(complete)
+        func send(completion: Subscribers.Completion<Failure>) {
+            onComplete(completion)
         }
     }
 }

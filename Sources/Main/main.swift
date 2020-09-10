@@ -14,7 +14,8 @@ func executeParallelScraper() {
     let startTime = Date()
     
     let scraper = LifeWikiAllPatternPageScraper()
-    scraper.fetchPageSubject
+    scraper.fetchAll()
+//    scraper.fetchPageSubject
         .map(\.patternLinks)
         .flatMap { urls in
             Publishers.MergeMany(urls.map { url in
@@ -29,7 +30,7 @@ func executeParallelScraper() {
             outputReport(results: results, startTime: startTime)
         }
         .store(in: &cancellables)
-    scraper.startFetchAllPages()
+//    scraper.startFetchAllPages()
 }
 
 func scrapeLifeWikiPatterns() -> AnyPublisher<[ScrapeResult], Never> {
@@ -127,21 +128,21 @@ DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
 }
  */
 
-LifeWikiAllPatternPageScraper.startFetchAllPages2()
-    .flatMap(maxPublishers: .max(2)) { value -> Future<String, Never> in
-        print("🍏 \(value)")
-        return Future<String, Never> { promise in
-            DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
-                promise(.success(value))
-            }
-        }
-    }
-    .sink { completion in
-        print("⭐ \(completion)")
-    } receiveValue: { value in
-        print("🍊 \(value)")
-    }
-    .store(in: &cancellables)
+//LifeWikiAllPatternPageScraper.startFetchAllPages2()
+//    .flatMap(maxPublishers: .max(2)) { value -> Future<String, Never> in
+//        print("🍏 \(value)")
+//        return Future<String, Never> { promise in
+//            DispatchQueue.global().asyncAfter(deadline: .now() + 1.0) {
+//                promise(.success(value))
+//            }
+//        }
+//    }
+//    .sink { completion in
+//        print("⭐ \(completion)")
+//    } receiveValue: { value in
+//        print("🍊 \(value)")
+//    }
+//    .store(in: &cancellables)
 
 let customMode = "LifeGameScraper"
 RunLoop.current.run(mode: RunLoop.Mode(customMode), before: Date.distantFuture)
