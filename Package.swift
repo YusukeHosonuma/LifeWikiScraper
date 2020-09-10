@@ -8,6 +8,11 @@ let package = Package(
     platforms: [
          .macOS(.v10_15),
     ],
+    products: [
+        .library(
+            name: "LifeWikiScraper",
+            targets: ["Scraper"]),
+    ],
     dependencies: [
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.2"),
         .package(url: "https://github.com/YusukeHosonuma/SwiftRLE.git", from: "0.1.0")
