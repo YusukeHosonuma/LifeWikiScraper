@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Scraper",
+    name: "LifeWikiScraper",
     platforms: [
          .macOS(.v10_15),
     ],
