@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Scraper
+@testable import LifeWikiScraper
 
 // TODO: システムのキャッシュディレクトリが理想かもだけどとりあえず妥協
 let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache"), useMD5: true)

@@ -4,14 +4,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "Scraper",
+    name: "LifeWikiScraper",
     platforms: [
          .macOS(.v10_15),
     ],
     products: [
         .library(
             name: "LifeWikiScraper",
-            targets: ["Scraper"]),
+            targets: ["LifeWikiScraper"]),
     ],
     dependencies: [
         .package(url: "https://github.com/scinfu/SwiftSoup.git", from: "2.3.2"),
@@ -20,12 +20,12 @@ let package = Package(
     targets: [
         .target(
             name: "Main",
-            dependencies: ["Scraper"]),
+            dependencies: ["LifeWikiScraper"]),
         .target(
-            name: "Scraper",
+            name: "LifeWikiScraper",
             dependencies: ["SwiftSoup", "SwiftRLE"]),
         .testTarget(
-            name: "ScraperTests",
-            dependencies: ["Scraper"]),
+            name: "LifeWikiScraperTests",
+            dependencies: ["LifeWikiScraper"]),
     ]
 )

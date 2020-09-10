@@ -1,5 +1,5 @@
 import Foundation
-import Scraper
+import LifeWikiScraper
 import Combine
 
 var cancellables: [AnyCancellable] = []
@@ -19,15 +19,15 @@ func outputReport(results: [LifeWiki.ScrapeResult], startTime: Date) {
         guard case .success(let pattern) = $0 else { return nil }
         return pattern
     }
-    
+
     let errors: [ScrapeError] = results.compactMap {
         guard case .failure(let error) = $0 else { return nil }
         return error
     }
-    
+
     print("⭐ Scraping is finished. (success: \(patterns.count), fail: \(errors.count),  total: \(results.count))")
     print()
-    
+
     print("❌ Fails:")
     for error in errors {
         switch error {

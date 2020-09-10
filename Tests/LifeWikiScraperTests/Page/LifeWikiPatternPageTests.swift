@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import Scraper
+@testable import LifeWikiScraper
 
 class LifeWikiPatternPageTests: XCTestCase {
     
