@@ -13,7 +13,7 @@ struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publish
     
     typealias Output = SubscriberInput
     typealias Failure = SubscriberFailure
-    typealias Handler = (Subscribers.Sink<SubscriberInput, SubscriberFailure>) -> Void
+    typealias Handler = (Subscriber<SubscriberInput, SubscriberFailure>) -> Cancellable
 
     let handler: Handler
 
@@ -21,7 +21,7 @@ struct SomePublisher<SubscriberInput, SubscriberFailure: Error>: Combine.Publish
         self.handler = handler
     }
     
-    func receive<S>(subscriber: S) where S : Subscriber, Self.Failure == S.Failure, Self.Output == S.Input {
+    func receive<S>(subscriber: S) where S : Combine.Subscriber, Self.Failure == S.Failure, Self.Output == S.Input {
         let subscription = Subscription(handler, downStream: subscriber)
         subscriber.receive(subscription: subscription)
     }
@@ -32,33 +32,25 @@ extension SomePublisher {
         
         private let lock = NSRecursiveLock()
         
-        var upstream: Subscribers.Sink<Output, Failure>?
+        var cancellable: Cancellable?
         var downStream: DownStream?
-        let handler: Handler
         
         var demand: Subscribers.Demand = .none
         var completion: Subscribers.Completion<Failure>?
         
         var buffer = [Output]()
         
-        init(_ handler: @escaping (Subscribers.Sink<Output, Failure>) -> Void, downStream: DownStream) {
-            self.handler = handler
+        init(_ handler: @escaping Handler, downStream: DownStream) {
             self.downStream = downStream
+            
+            let subscriber = Subscriber(onSend: { self.buffer.append($0) },
+                                        onComplete: { self.completion = $0 })
+            cancellable = handler(subscriber)
         }
 
         func request(_ demand: Subscribers.Demand) {
             lock.lock()
             defer { lock.unlock() }
-            
-            if upstream == nil {
-                let upstream = Subscribers.Sink<DownStream.Input, DownStream.Failure>(receiveCompletion: { completion in
-                    self.completion = completion
-                }, receiveValue: { value in
-                    self.buffer.append(value)
-                })
-                handler(upstream)
-                self.upstream = upstream
-            }
             
             self.demand += demand
             
@@ -78,18 +70,25 @@ extension SomePublisher {
         
         func cancel() {
             guard let downStream = downStream else { return }
+
+            cancellable?.cancel()
             downStream.receive(completion: .finished)
             
             self.downStream = nil
             self.buffer = []
         }
     }
+    
+    struct Subscriber<Input, Failure: Error> {
+        let onSend: (Input) -> Void
+        let onComplete: (Subscribers.Completion<Failure>) -> Void
+        
+        func send(_ value: Input) {
+            onSend(value)
+        }
+        
+        func complete(_ complete: Subscribers.Completion<Failure>) {
+            onComplete(complete)
+        }
+    }
 }
-// ⚠️ 要求なんて無視して全部流しちまうぞゴルァ！
-//
-//  let upstream = Subscribers.Sink<Int, Never>(receiveCompletion: { completion in
-//      self.downStream?.receive(completion: completion)
-//  }, receiveValue: { value in
-//      _ = self.downStream?.receive(value)
-//  })
-//  handler(upstream)

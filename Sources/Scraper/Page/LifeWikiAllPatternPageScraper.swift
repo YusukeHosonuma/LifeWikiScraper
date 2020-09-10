@@ -24,12 +24,13 @@ public final class LifeWikiAllPatternPageScraper {
         SomePublisher { subscriber in
             print("🍎 Start")
             // これは冗長なのでなんとかしたい
-            _ = subscriber.receive("1")
-            _ = subscriber.receive("2")
-            _ = subscriber.receive("3")
-            _ = subscriber.receive("4")
-            _ = subscriber.receive("5")
-            subscriber.receive(completion: .finished)
+            subscriber.send("1")
+            subscriber.send("2")
+            subscriber.send("3")
+            subscriber.send("4")
+            subscriber.send("5")
+            subscriber.complete(.finished)
+            return AnyCancellable {}
         }
         .eraseToAnyPublisher()
     }
