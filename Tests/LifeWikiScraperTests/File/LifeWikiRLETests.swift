@@ -13,9 +13,8 @@ final class LifeWikiRLETests: XCTestCase {
     
     // http://conwaylife.com/patterns/hook.rle
     func testExample() throws {
-        do {
-            let result = LifeWikiRLE(
-                text: """
+        let result = try LifeWikiRLE(
+            text: """
                 #N Hook
                 #O Unknown
                 #C http://conwaylife.com/wiki/Hook
@@ -23,24 +22,23 @@ final class LifeWikiRLETests: XCTestCase {
                 x = 3, y = 2, rule = B3/S23
                 obo$b2o!
                 """,
-                source: URL(string: "http://conwaylife.com/patterns/hook.rle")!
-            )
-
-            let rle = try XCTUnwrap(result)
-            XCTAssertEqual(rle.name, "Hook")
-            XCTAssertEqual(rle.x, 3)
-            XCTAssertEqual(rle.y, 2)
-            XCTAssertEqual(rle.rule, "B3/S23")
-            XCTAssertEqual(rle.cells, [
-                1, 0, 1,
-                0, 1, 1,
-            ])
-        }
+            source: URL(string: "http://conwaylife.com/patterns/hook.rle")!
+        )
+        
+        let rle = try XCTUnwrap(result)
+        XCTAssertEqual(rle.name, "Hook")
+        XCTAssertEqual(rle.x, 3)
+        XCTAssertEqual(rle.y, 2)
+        XCTAssertEqual(rle.rule, "B3/S23")
+        XCTAssertEqual(rle.cells, [
+            1, 0, 1,
+            0, 1, 1,
+        ])
     }
     
     // https://www.conwaylife.com/patterns/1234.rle
     func testExample2() throws {
-        let result = LifeWikiRLE(
+        let result = try LifeWikiRLE(
             text: """
             #N 1-2-3-4
             #C A period 4 oscillator.
@@ -76,52 +74,47 @@ final class LifeWikiRLETests: XCTestCase {
     
     // https://www.conwaylife.com/patterns/24cellquadraticgrowth.rle
     func testExample3() throws {
-        
-        let result = LifeWikiRLE(
-            text: """
-            #N 24-cell quadratic growth
-            #O Michael Simkin
-            #C It had been the smallest known pattern, that exhibits quadratic population
-            #C growth, before it was superseded by switch engine ping-pong.
-            #C www.conwaylife.com/wiki/24-cell_quadratic_growth
-            x = 39786, y = 143, rule = B3/S23
-            39782bo$39782bo$39783b2o$39785bo$39785bo$39738bo46bo$39739bo45bo$
-            39740bo$39739bo$39738bo$39740b3o101$2o$o28$19bo$18b3o$20bo!
-            """,
-            source: URL(string: "https://www.conwaylife.com/patterns/24cellquadraticgrowth.rle")!
-        )
-        
-        XCTAssertNil(result)
-        
-        // TODO: エラー型を返すように
-        
-//        let rle = try XCTUnwrap(result)
-//        XCTAssertEqual(rle.name, "24-cell quadratic growth")
-//        XCTAssertEqual(rle.x, 39786)
-//        XCTAssertEqual(rle.y, 143)
-//        XCTAssertEqual(rle.rule, "B3/S23")
+        let url = URL(string: "https://www.conwaylife.com/patterns/24cellquadraticgrowth.rle")!
+        XCTAssertThrowsError(
+            try LifeWikiRLE(
+                text: """
+                x = 39786, y = 143, rule = B3/S23
+                39782bo$39782bo$39783b2o$39785bo$39785bo$39738bo46bo$39739bo45bo$
+                39740bo$39739bo$39738bo$39740b3o101$2o$o28$19bo$18b3o$20bo!
+                """,
+                source: url
+            )
+        ) { error in
+            XCTAssertEqual(error as? LifeWikiRLE.Error, .skipLargeSize(url))
+        }
     }
     
     // 1MB+
-    func testExample4() {
+    func testExample4() throws {
         let url = URL(string: "https://www.conwaylife.com/patterns/caterloopillar31c240.rle")!
         let text = getContent(url: url, type: .plainText)
-        let rle = LifeWikiRLE(text: text, source: url)
-        XCTAssertNil(rle)
+        XCTAssertThrowsError(
+            try LifeWikiRLE(text: text, source: url)
+        ) { error in
+            XCTAssertEqual(error as? LifeWikiRLE.Error, .skipLargeSize(url))
+        }
     }
     
     // 改行コード混在（\n + \r\n）
-    func testExample5() {
+    func testExample5() throws {
         let url = URL(string: "https://www.conwaylife.com/patterns/p448dartgun.rle")!
         let text = getContent(url: url, type: .plainText)
-        let rle = LifeWikiRLE(text: text, source: url)
-        XCTAssertNil(rle)
+        XCTAssertThrowsError(
+            try LifeWikiRLE(text: text, source: url)
+        ) { error in
+            XCTAssertEqual(error as? LifeWikiRLE.Error, .skipLargeSize(url))
+        }
     }
     
     // コメント行なし
     // https://www.conwaylife.com/patterns/258p3.rle
     func testExample6() throws {
-        let result = LifeWikiRLE(
+        let result = try LifeWikiRLE(
             text: """
             x = 28, y = 25, rule = B3/S23
             3bo3bobob6obobo3bo$2bob2obo2bobo2bobo2bob2obo$2bo7b2o4b2o7bo$b2o2bo3bo
@@ -144,14 +137,18 @@ final class LifeWikiRLETests: XCTestCase {
 
     // メタデータに記載されたサイズ（x, y）とパターンのサイズが不一致
     func testExample7() throws {
-        let result = LifeWikiRLE(
-            text: """
-            x = 3, y = 1, rule = B2c3c/S
-            obo$bbb$bbo!
-            """,
-            source: URL(string: "https://www.conwaylife.com/patterns/pole3rotor.rle")!
-        )
-        XCTAssertNil(result)
+        let url = URL(string: "https://www.conwaylife.com/patterns/pole3rotor.rle")!
+        XCTAssertThrowsError(
+            try LifeWikiRLE(
+                text: """
+                x = 3, y = 1, rule = B2c3c/S
+                obo$bbb$bbo!
+                """,
+                source: url
+            )
+        ) { error in
+            XCTAssertEqual(error as? LifeWikiRLE.Error, .boardSizeInvalid(url))
+        }
     }
     
     // MARK: Private

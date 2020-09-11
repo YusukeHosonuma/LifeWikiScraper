@@ -14,6 +14,39 @@ import Combine
 
 private let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache/rle/"))
 
+extension LifeWikiRLE {
+    public enum Error: Swift.Error, LocalizedError, Equatable {
+        case notFound(URL)
+        case missingMetaLine(URL)
+        case missingBoardSize(URL)
+        case skipLargeSize(URL)
+        case rleDecodeFailed(URL)
+        case boardSizeInvalid(URL)
+        
+        public var errorDescription: String? {
+            switch self {
+            case .notFound(let url):
+                return "RLE file is not found. (\(url))"
+
+            case .missingMetaLine(let url):
+                return "Meta line is missing. (\(url))"
+                
+            case .missingBoardSize(let url):
+                return "Board size is missing. (\(url))"
+                
+            case .skipLargeSize(let url):
+                return "Board size is over than 10,000. (\(url))"
+                
+            case .rleDecodeFailed(let url):
+                return "RLE decode is failed. (\(url))"
+                
+            case .boardSizeInvalid(let url):
+                return "Board size is invalid. (\(url))"
+            }
+        }
+    }
+}
+
 public struct LifeWikiRLE {
     public let x: Int
     public let y: Int
@@ -24,21 +57,23 @@ public struct LifeWikiRLE {
     public let cells: [Int]
     public let sourceURL: URL
     
-    public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE?, Never> {
+    public static func fetch(url: URL) -> AnyPublisher<LifeWikiRLE, LifeWikiRLE.Error> {
         downloader.downloadPublisher(url: url, type: .plainText)
-            .map { text in
-                guard let text = text else {
-                    print("❌ RLE is can't fetched (\(url))")
-                    return nil
-                }
-                print("🌎 RLE fetched (\(url))")
-                return LifeWikiRLE(text: text, source: url) // TODO: 暫定（エラー型を扱ったほうがよさそう）
+            .tryMap { text in
+                guard let text = text else { throw LifeWikiRLE.Error.notFound(url) }
+                return try LifeWikiRLE(text: text, source: url)
             }
+            .mapError { $0 as! LifeWikiRLE.Error }
             .eraseToAnyPublisher()
+        
+        //            .handleEvents(receiveCompletion: { completion in
+        //                if case .failure(let error) = completion {
+        //                    print("⏭ Skipped: \(error.localizedDescription)")
+        //                }
+        //            })
     }
-
-    // TODO: エラーに変更したい
-    init?(text: String, source: URL) {
+    
+    init(text: String, source: URL) throws {
         self.sourceURL = source
         
         // Note:
@@ -50,16 +85,16 @@ public struct LifeWikiRLE {
         // 中には1MBを超える巨大なファイルも存在するため、メタ情報の行だけ先読みして処理が不要ならスキップする。
         // https://www.conwaylife.com/patterns/caterloopillar31c240.rle
         guard let metaLine = Self.extractMetaLine(text, lineSeparator: lineSeparator) else {
-            print("⚠️ Skipped because meta line is missing. (\(source))")
-            return nil
+            //print("⚠️ Skipped because meta line is missing. (\(source))")
+            throw Error.missingMetaLine(source)
         }
         
         let meta = Self.parseMetaLines(metaLine)
         guard
             let x = meta["x"].flatMap(Int.init),
             let y = meta["y"].flatMap(Int.init) else {
-            print("⏭ Parse process is skpped because board size is missing. (\(source)")
-            return nil
+            //print("⏭ Parse process is skpped because board size is missing. (\(source)")
+            throw Error.missingBoardSize(source)
         }
 
         self.x = x
@@ -67,8 +102,8 @@ public struct LifeWikiRLE {
         rule = meta["rule"]!
         
         guard x * y < 10000 else {
-            print("⏭ Parse process is skpped because size is over than 10,000. (\(x) x \(y))")
-            return nil
+            //print("⏭ Parse process is skpped because size is over than 10,000. (\(x) x \(y))")
+            throw Error.skipLargeSize(source)
         }
         
         let lines = text
@@ -85,7 +120,7 @@ public struct LifeWikiRLE {
 
         let dataLine = lines[(commentLines.count + 1)...].joined().dropLast() // remove `!`
         guard let decoded = SwiftRLE.decode(String(dataLine)) else {
-            return nil
+            throw Error.rleDecodeFailed(source)
         }
         
         cells = decoded
@@ -96,8 +131,7 @@ public struct LifeWikiRLE {
             .reduce([], +)
         
         if x * y != cells.count {
-            print("RLE is invalid.")
-            return nil
+            throw Error.boardSizeInvalid(source)
         }
     }
     

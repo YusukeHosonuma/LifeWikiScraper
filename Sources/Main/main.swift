@@ -36,7 +36,7 @@ func outputReport(results: [LifeWiki.ScrapeResult], startTime: Date) {
             print("- \(error.localizedDescription)")
         case .rleLinkMissing:
             print("- \(error.localizedDescription)")
-        case .rleNotFound:
+        case .rleFetchFailed:
             print("- \(error.localizedDescription)")
         }
     }
