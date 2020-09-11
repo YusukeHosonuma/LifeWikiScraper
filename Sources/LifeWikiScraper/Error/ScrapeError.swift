@@ -10,7 +10,7 @@ import Foundation
 public enum ScrapeError: Error {
     case patternPageNotFound(wikiPageURL: URL)
     case rleLinkMissing(wikiPageURL: URL)
-    case rleNotFound(url: URL)
+    case rleFetchFailed(wikiPageURL: URL, cause: Error)
 }
 
 extension ScrapeError: LocalizedError {
@@ -22,8 +22,8 @@ extension ScrapeError: LocalizedError {
         case .rleLinkMissing(wikiPageURL: let url):
             return "RLE link is missing. (in \(url))"
             
-        case .rleNotFound(url: let url):
-            return "RLE file is not found. (\(url))"
+        case let .rleFetchFailed(url, error):
+            return "Fetch RLE file is failed at \(url). Cause: \(error))"
         }
     }
 }

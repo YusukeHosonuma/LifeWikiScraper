@@ -7,6 +7,7 @@ var cancellables: [AnyCancellable] = []
 func main() {
     let startTime = Date()
     LifeWiki.scrapePatterns()
+        .collect()
         .sink { results in
             outputReport(results: results, startTime: startTime)
             exit(0) // 🚫
@@ -35,7 +36,7 @@ func outputReport(results: [LifeWiki.ScrapeResult], startTime: Date) {
             print("- \(error.localizedDescription)")
         case .rleLinkMissing:
             print("- \(error.localizedDescription)")
-        case .rleNotFound:
+        case .rleFetchFailed:
             print("- \(error.localizedDescription)")
         }
     }

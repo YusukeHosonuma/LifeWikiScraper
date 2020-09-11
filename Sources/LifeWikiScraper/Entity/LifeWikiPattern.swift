@@ -42,15 +42,14 @@ public struct LifeWikiPattern: Codable {
                         return FailScrape(error: .patternPageNotFound(wikiPageURL: wikiPageURL)).eraseToAnyPublisher()
                     }
                     guard let url = page.rleURL else {
-                        return FailScrape(error: ScrapeError.rleLinkMissing(wikiPageURL: wikiPageURL)).eraseToAnyPublisher()
+                        return FailScrape(error: .rleLinkMissing(wikiPageURL: wikiPageURL)).eraseToAnyPublisher()
                     }
-                    
+
                     return LifeWikiRLE.fetch(url: url)
-                        .tryMap { (rle: LifeWikiRLE?) in
-                            guard let rle = rle else { throw ScrapeError.rleNotFound(url: url) }
-                            return LifeWikiPattern(page: page, rle: rle)
+                        .map { LifeWikiPattern(page: page, rle: $0) }
+                        .mapError { error in
+                            ScrapeError.rleFetchFailed(wikiPageURL: url, cause: error)
                         }
-                        .mapError { $0 as! ScrapeError }
                         .eraseToAnyPublisher()
                 }
                 .eraseToAnyPublisher()
@@ -59,7 +58,7 @@ public struct LifeWikiPattern: Codable {
             fatalError() // 💥 とりあえず落としてしまう
         }
     }
-    
+
     public init(page: LifeWikiPatternPage, rle: LifeWikiRLE) {
         // From page:
         self.title           = page.title
