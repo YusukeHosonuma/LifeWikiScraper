@@ -142,6 +142,18 @@ final class LifeWikiRLETests: XCTestCase {
         XCTAssertEqual(rle.rule, "B3/S23")
     }
 
+    // メタデータに記載されたサイズ（x, y）とパターンのサイズが不一致
+    func testExample7() throws {
+        let result = LifeWikiRLE(
+            text: """
+            x = 3, y = 1, rule = B2c3c/S
+            obo$bbb$bbo!
+            """,
+            source: URL(string: "https://www.conwaylife.com/patterns/pole3rotor.rle")!
+        )
+        XCTAssertNil(result)
+    }
+    
     // MARK: Private
     
     private func assertCells(_ cells: [Int], size: Int, expectPlainText: String) {

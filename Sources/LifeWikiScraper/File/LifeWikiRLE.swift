@@ -37,6 +37,7 @@ public struct LifeWikiRLE {
             .eraseToAnyPublisher()
     }
 
+    // TODO: エラーに変更したい
     init?(text: String, source: URL) {
         self.sourceURL = source
         
@@ -93,6 +94,11 @@ public struct LifeWikiRLE {
                 line.map { $0 == "o" ? 1 : 0 }.filled(to: x, by: 0)
             }
             .reduce([], +)
+        
+        if x * y != cells.count {
+            print("RLE is invalid.")
+            return nil
+        }
     }
     
     // MARK: Private
