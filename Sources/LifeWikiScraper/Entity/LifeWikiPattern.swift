@@ -22,12 +22,12 @@ public struct LifeWikiPattern: Codable {
     public static func fetch(wikiPageURL url: URL) -> AnyPublisher<LifeWikiPattern, ScrapeError> {
         if LifeWikiPatternHolder.isScraped(url) {
             return fetchFromLocal(wikiPageURL: url)
+        } else {
+            return fetchFromNetwork(wikiPageURL: url)
                 .handleEvents(receiveOutput: {
                     LifeWikiPatternHolder.write($0) // save cache
                 })
                 .eraseToAnyPublisher()
-        } else {
-            return fetchFromNetwork(wikiPageURL: url)
         }
     }
 
