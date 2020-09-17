@@ -24,6 +24,10 @@ public struct LifeWikiPattern: Codable {
             return fetchFromLocal(wikiPageURL: url)
         } else {
             return fetchFromNetwork(wikiPageURL: url)
+                .handleEvents(receiveOutput: {
+                    LifeWikiPatternHolder.write($0) // save cache
+                })
+                .eraseToAnyPublisher()
         }
     }
 
