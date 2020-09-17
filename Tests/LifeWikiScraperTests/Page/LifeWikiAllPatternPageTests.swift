@@ -17,7 +17,7 @@ class LifeWikiAllPatternPageTests: XCTestCase {
             let page = LifeWikiAllPatternPage(html: html)
             XCTAssertEqual(page.links.first, URL(string: "https://www.conwaylife.com/wiki/$rats")!)
             XCTAssertEqual(page.links.count, 200)
-            XCTAssertEqual(page.nextLink, URL(string: "https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Beacon+on+38P11.1#mw-pages")!)
+            XCTAssertEqual(page.nextLink, URL(string: "https://www.conwaylife.com/w/index.php?title=Category:Patterns&pagefrom=Beacon+maker#mw-pages")!)
         }
         
         // Page 2.

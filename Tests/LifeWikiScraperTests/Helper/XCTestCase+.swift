@@ -8,8 +8,9 @@
 import XCTest
 @testable import LifeWikiScraper
 
-// TODO: システムのキャッシュディレクトリが理想かもだけどとりあえず妥協
-let downloader = CachedHTTPTextDownloader(cacheDirectory: URL(fileURLWithPath: "./cache"), useMD5: true)
+// Note:
+// 実際にスクレイピングしてテストしているものもあるので、キャッシュが効かないように一時ディレクトリを使用する。
+let downloader = CachedHTTPTextDownloader(cacheDirectory: FileManager.default.temporaryDirectory, useMD5: true)
 
 extension XCTestCase {
     func getContent(_ urlString: String, type: ContentType) -> String {
