@@ -1,3 +1,3 @@
 # Scraper
 
-A description of this package.
+Scraper for [LifeWiki](https://conwaylife.com/wiki/).
